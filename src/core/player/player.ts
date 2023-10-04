@@ -24,7 +24,7 @@ import { requestMsg } from '@/utils/message'
 import { getRandom } from '@/utils/common'
 import { filterList } from './utils'
 import BackgroundTimer from 'react-native-background-timer'
-import { checkNotificationPermission } from '@/utils/tools'
+import { checkNotificationPermission, checkIgnoringBatteryOptimization } from '@/utils/tools'
 import {LIST_IDS} from "@/config/constant";
 import {requestStoragePermission} from "@/core/music/utils";
 import RNFetchBlob from "rn-fetch-blob";
@@ -295,6 +295,7 @@ const handleLocalPlay = async ()=>{
 const handlePlay = async() => {
   if (!isInitialized()) {
     await checkNotificationPermission()
+    void checkIgnoringBatteryOptimization()
     await playerInitial({
       volume: settingState.setting['player.volume'],
       playRate: settingState.setting['player.playbackRate'],
@@ -413,7 +414,8 @@ export const playNext = async(isAutoToggle = false): Promise<void> => {
       const playMusicInfo = playedList[index]
       await pause()
       setPlayMusicInfo(playMusicInfo.listId, playMusicInfo.musicInfo, playMusicInfo.isTempPlay)
-
+      if(currentListId === LIST_IDS.DOWNLOAD) await handleLocalPlay()
+      else await handlePlay()
       return
     }
   }
