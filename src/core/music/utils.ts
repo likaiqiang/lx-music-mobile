@@ -1,3 +1,4 @@
+import {PermissionsAndroid, Platform} from 'react-native';
 import musicSdk, { findMusic } from '@/utils/musicSdk'
 import {
   getOtherSource as getOtherSourceFromStore,
@@ -11,6 +12,7 @@ import settingState from '@/store/setting/state'
 import { requestMsg } from '@/utils/message'
 import BackgroundTimer from 'react-native-background-timer'
 import RNFetchBlob from 'rn-fetch-blob';
+import {getLyricInfo} from "@/core/music/index";
 
 function getFileExtension(url:string) {
   // 使用正则表达式匹配URL中的文件扩展名
@@ -20,25 +22,54 @@ function getFileExtension(url:string) {
   return match ? match[1] : 'mp3';
 }
 
-const downloadFile = async (url: string, fileName: string) => {
+const downloadMusicWithLrc = async ({url, fileName, musicInfo}: {url: string, fileName: string, musicInfo: LX.Music.MusicInfoOnline}) => {
   const dirs = RNFetchBlob.fs.dirs;
   const extension = getFileExtension(url);
-  const path = `${dirs.DownloadDir}/${fileName}.${extension}`;
+  const path = `${dirs.DownloadDir}/lx.music/${fileName}.${extension}`;
 
   try {
-    await RNFetchBlob.config({
-      fileCache: true,
-      addAndroidDownloads: {
-        useDownloadManager: true,
-        notification: true,
-        path: path,
-        description: 'Downloading file.',
-      },
-    })
-      .fetch('GET', url)
+    await Promise.allSettled([
+      RNFetchBlob.config({
+        fileCache: true,
+        addAndroidDownloads: {
+          useDownloadManager: true,
+          notification: true,
+          path: path,
+          description: 'Downloading file.',
+        },
+      })
+        .fetch('GET', url),
+      getLyricInfo({musicInfo, onToggleSource: ()=>{}}).then(async ({lyric})=>{
+        if (Platform.OS === 'android' && Platform.Version === 29){ // android 10
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+              title: '需要存储权限',
+              message: '为了保存音乐歌词以供离线使用，我们需要访问您的设备存储。',
+              buttonNeutral: '稍后询问',
+              buttonNegative: '拒绝',
+              buttonPositive: '允许',
+            },
+          )
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            return RNFetchBlob.fs.writeFile(
+              `${dirs.DownloadDir}/lx.music/${fileName}.lrc`,
+              lyric,
+              'utf8'
+            )
+          }
+          return Promise.reject()
+        }
+        return RNFetchBlob.fs.writeFile(
+          `${dirs.DownloadDir}/lx.music/${fileName}.lrc`,
+          lyric,
+          'utf8'
+        )
+      })
+    ])
     console.log('File downloaded successfully.')
   } catch (error) {
-    console.error(error)
+    console.error(JSON.stringify(error))
   }
 };
 
@@ -285,9 +316,13 @@ export const downloadMusic = (musicInfo: LX.Music.MusicInfoOnline)=>{
     musicInfo: musicInfo,
     isRefresh:false,
     allowToggleSource: true,
-    onToggleSource:()=>{}
+    onToggleSource:()=>{},
   }).then(res=>{
-    return downloadFile(res.url, `${res.musicInfo.singer}-${res.musicInfo.name}`)
+    return downloadMusicWithLrc({
+      url: res.url,
+      fileName: `${res.musicInfo.singer}-${res.musicInfo.name}`,
+      musicInfo
+    })
   }).then(()=>{
     toast('下载成功')
   }).catch(()=>{
