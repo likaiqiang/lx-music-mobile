@@ -15,11 +15,13 @@ export const userLists: LX.List.UserListInfo[] = []
 export const allMusicList = new Map<string, LX.Music.MusicInfo[]>()
 
 export const setUserLists = (lists: LX.List.UserListInfo[]) => {
+  console.log('setUserLists');
   userLists.splice(0, userLists.length, ...lists)
   return userLists
 }
 
 export const setMusicList = (listId: string, musicList: LX.Music.MusicInfo[]): LX.Music.MusicInfo[] => {
+  console.log('setMusicList');
   allMusicList.set(listId, musicList)
   return musicList
 }
