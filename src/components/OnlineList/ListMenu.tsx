@@ -2,6 +2,7 @@ import { useMemo, useRef, useImperativeHandle, forwardRef, useState } from 'reac
 import { useI18n } from '@/lang'
 import Menu, { type MenuType, type Position } from '@/components/common/Menu'
 import { hasDislike } from '@/core/dislikeList'
+import {useSettingValue} from "@/store/setting/hook";
 
 export interface SelectInfo {
   musicInfo: LX.Music.MusicInfoOnline
@@ -33,6 +34,7 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
   const menuRef = useRef<MenuType>(null)
   const selectInfoRef = useRef<SelectInfo>(initSelectInfo as SelectInfo)
   const [isDislikeMusic, setDislikeMusic] = useState(false)
+  const isEnableDownload = useSettingValue('download.enable')
 
   useImperativeHandle(ref, () => ({
     show(selectInfo, position) {
@@ -52,12 +54,15 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
     return [
       { action: 'play', label: t('play') },
       { action: 'playLater', label: t('play_later') },
-      { action: 'download', label: '下载' },
+      { action: 'download', label: t('download') },
       { action: 'add', label: t('add_to') },
       { action: 'copyName', label: t('copy_name') },
       { action: 'dislike', label: t('dislike'), disabled: isDislikeMusic },
-    ] as const
-  }, [t, isDislikeMusic])
+    ].filter(item=>{
+      if(item.action !== 'download') return true
+      return isEnableDownload
+    })
+  }, [t, isDislikeMusic,isEnableDownload])
 
   const handleMenuPress = ({ action }: typeof menus[number]) => {
     const selectInfo = selectInfoRef.current

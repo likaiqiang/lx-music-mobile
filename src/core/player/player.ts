@@ -25,6 +25,9 @@ import { getRandom } from '@/utils/common'
 import { filterList } from './utils'
 import BackgroundTimer from 'react-native-background-timer'
 import { checkNotificationPermission } from '@/utils/tools'
+import {LIST_IDS} from "@/config/constant";
+import {requestStoragePermission} from "@/core/music/utils";
+import RNFetchBlob from "rn-fetch-blob";
 
 // import { checkMusicFileAvailable } from '@renderer/utils/music'
 
@@ -118,25 +121,41 @@ const getMusicPlayUrl = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListIt
   })
 }
 
-export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, isRefresh?: boolean) => {
+
+export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem | LX.Music.MusicInfoDownloaded, isRefresh?: boolean) => {
+  console.log('setMusicUrl');
   // addLoadTimeout()
   if (!diffCurrentMusicInfo(musicInfo)) return
   if (cancelDelayRetry) cancelDelayRetry()
-  global.lx.gettingUrlId = musicInfo.id
-  void getMusicPlayUrl(musicInfo, isRefresh).then((url) => {
-    if (!url) return
-    setResource(musicInfo, url, playerState.progress.nowPlayTime)
-  }).catch((err: any) => {
-    console.log(err)
-    setStatusText(err.message)
-    global.app_event.error()
-    addDelayNextTimeout()
-  }).finally(() => {
-    if (musicInfo === playerState.playMusicInfo.musicInfo) {
+  // @ts-ignore
+  if(musicInfo.source !== 'local'){
+    console.log('source 1');
+    global.lx.gettingUrlId = musicInfo.id
+
+    void getMusicPlayUrl(musicInfo, isRefresh).then((url) => {
+      if (!url) return
+      setResource(musicInfo, url, playerState.progress.nowPlayTime)
+    }).catch((err: any) => {
+      console.log(err)
+      setStatusText(err.message)
+      global.app_event.error()
+      addDelayNextTimeout()
+    }).finally(() => {
+      if (musicInfo === playerState.playMusicInfo.musicInfo) {
+        global.lx.gettingUrlId = ''
+        clearLoadTimeout()
+      }
+    })
+  }
+  else{
+    console.log('source 2', musicInfo);
+    const _musicInfo = musicInfo as LX.Music.MusicInfoDownloaded
+    setResource(_musicInfo, _musicInfo.meta.filePath, playerState.progress.nowPlayTime)
+    if (_musicInfo === playerState.playMusicInfo.musicInfo) {
       global.lx.gettingUrlId = ''
       clearLoadTimeout()
     }
-  })
+  }
 }
 
 // 恢复上次播放的状态
@@ -175,8 +194,104 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
   if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
 }
 
+function getLyricsFilePath(musicFilePath: string) {
+  return musicFilePath.replace(/\.[^/.]+$/, '.lrc');
+}
+
+function handleGetLyricInfo(playMusicInfo: LX.Player.PlayMusicInfo){
+  const musicInfo = playMusicInfo.musicInfo
+  void getLyricInfo({ musicInfo }).then((lyricInfo) => {
+    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+    setMusicInfo({
+      lrc: lyricInfo.lyric,
+      tlrc: lyricInfo.tlyric,
+      lxlrc: lyricInfo.lxlyric,
+      rlrc: lyricInfo.rlyric,
+      rawlrc: lyricInfo.rawlrcInfo.lyric,
+    })
+    global.app_event.lyricUpdated()
+  }).catch((err) => {
+    console.log(err)
+    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+    setStatusText(global.i18n.t('lyric__load_error'))
+  })
+}
+
+const handleLocalPlay = async ()=>{
+  if (!isInitialized()) {
+    await checkNotificationPermission()
+    await playerInitial({
+      volume: settingState.setting['player.volume'],
+      playRate: settingState.setting['player.playbackRate'],
+      cacheSize: settingState.setting['player.cacheSize'] ? parseInt(settingState.setting['player.cacheSize']) : 0,
+      isHandleAudioFocus: settingState.setting['player.isHandleAudioFocus'],
+      isEnableAudioOffload: settingState.setting['player.isEnableAudioOffload'],
+    })
+  }
+
+  global.lx.isPlayedStop &&= false
+
+  if (global.lx.restorePlayInfo) {
+    void handleRestorePlay(global.lx.restorePlayInfo)
+    global.lx.restorePlayInfo = null
+    return
+  }
+
+  const playMusicInfo = playerState.playMusicInfo
+  const musicInfo = playMusicInfo.musicInfo
+
+  console.log('playMusicInfo',playMusicInfo);
+
+  if (!musicInfo) return
+
+  await setStop()
+  global.app_event.pause()
+
+  clearDelayNextTimeout()
+  clearLoadTimeout()
+
+
+  if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
+
+  setMusicUrl(musicInfo as LX.Music.MusicInfoLocal) // 核心
+
+  if((musicInfo as LX.Music.MusicInfoLocal).source === 'local'){
+    const _musicInfo = musicInfo as LX.Music.MusicInfoLocal
+    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+    setMusicInfo({ pic: '' })
+    global.app_event.picUpdated()
+    //load lrc
+    await requestStoragePermission()
+
+    if(musicInfo.id.startsWith('local__')){
+      const lrcExist = await RNFetchBlob.fs.exists(
+        getLyricsFilePath(_musicInfo.meta.filePath)
+      )
+      let lrc = ''
+      if(lrcExist) lrc = await RNFetchBlob.fs.readFile(getLyricsFilePath(_musicInfo.meta.filePath), 'utf8')
+      setMusicInfo({
+        lrc,
+        tlrc: '',
+        lxlrc: '',
+        rlrc: '',
+        rawlrc: '',
+      })
+    }
+    global.app_event.lyricUpdated()
+  }
+  else{
+    void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
+      if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+      setMusicInfo({ pic: url })
+      global.app_event.picUpdated()
+    })
+    handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
+  }
+}
+
 
 // 处理音乐播放
+// TODO
 const handlePlay = async() => {
   if (!isInitialized()) {
     await checkNotificationPermission()
@@ -211,7 +326,7 @@ const handlePlay = async() => {
 
   if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
 
-  setMusicUrl(musicInfo)
+  setMusicUrl(musicInfo as LX.Music.MusicInfo) // 核心
 
   void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
     if (musicInfo.id != playMusicInfo.musicInfo?.id) return
@@ -219,21 +334,7 @@ const handlePlay = async() => {
     global.app_event.picUpdated()
   })
 
-  void getLyricInfo({ musicInfo }).then((lyricInfo) => {
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setMusicInfo({
-      lrc: lyricInfo.lyric,
-      tlrc: lyricInfo.tlyric,
-      lxlrc: lyricInfo.lxlyric,
-      rlrc: lyricInfo.rlyric,
-      rawlrc: lyricInfo.rawlrcInfo.lyric,
-    })
-    global.app_event.lyricUpdated()
-  }).catch((err) => {
-    console.log(err)
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setStatusText(global.i18n.t('lyric__load_error'))
-  })
+  handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
 }
 
 /**
@@ -242,13 +343,15 @@ const handlePlay = async() => {
  * @param index 播放的歌曲位置
  */
 export const playList = async(listId: string, index: number) => {
+  console.log('playList',listId);
   await pause()
   const prevListId = playerState.playInfo.playerListId
   setPlayListId(listId)
   setPlayMusicInfo(listId, getList(listId)[index])
   if (settingState.setting['player.isAutoCleanPlayedList'] || prevListId != listId) clearPlayedList()
   clearTempPlayeList()
-  await handlePlay()
+  if(listId === LIST_IDS.DOWNLOAD) await handleLocalPlay()
+  else await handlePlay()
 }
 
 const handleToggleStop = async() => {
@@ -264,17 +367,18 @@ const handleToggleStop = async() => {
  * @returns
  */
 export const playNext = async(isAutoToggle = false): Promise<void> => {
-  console.log('playerState.tempPlayList',playerState.tempPlayList);
   if (playerState.tempPlayList.length) { // 如果稍后播放列表存在歌曲则直接播放改列表的歌曲
     const playMusicInfo = playerState.tempPlayList[0]
     removeTempPlayList(0)
     await pause()
     setPlayMusicInfo(playMusicInfo.listId, playMusicInfo.musicInfo, playMusicInfo.isTempPlay)
-    await handlePlay()
+    if(playMusicInfo.listId === LIST_IDS.DOWNLOAD) await handleLocalPlay()
+    else await handlePlay()
     return
   }
 
   const playMusicInfo = playerState.playMusicInfo
+  console.log('playMusicInfo next', JSON.stringify(playerState.playInfo))
   const playInfo = playerState.playInfo
   if (playMusicInfo.musicInfo == null) return handleToggleStop()
 
@@ -309,7 +413,7 @@ export const playNext = async(isAutoToggle = false): Promise<void> => {
       const playMusicInfo = playedList[index]
       await pause()
       setPlayMusicInfo(playMusicInfo.listId, playMusicInfo.musicInfo, playMusicInfo.isTempPlay)
-      await handlePlay()
+
       return
     }
   }
@@ -362,7 +466,8 @@ export const playNext = async(isAutoToggle = false): Promise<void> => {
 
   await pause()
   setPlayMusicInfo(nextPlayMusicInfo.listId, nextPlayMusicInfo.musicInfo)
-  await handlePlay()
+  if(playMusicInfo.listId === LIST_IDS.DOWNLOAD) await handleLocalPlay()
+  else await handlePlay()
 }
 
 /**
@@ -402,7 +507,8 @@ export const playPrev = async(isAutoToggle = false): Promise<void> => {
       const playMusicInfo = playedList[index]
       await pause()
       setPlayMusicInfo(playMusicInfo.listId, playMusicInfo.musicInfo, playMusicInfo.isTempPlay)
-      await handlePlay()
+      if(playMusicInfo.listId === LIST_IDS.DOWNLOAD) await handleLocalPlay()
+      else await handlePlay()
       return
     }
   }
@@ -455,7 +561,8 @@ export const playPrev = async(isAutoToggle = false): Promise<void> => {
 
   await pause()
   setPlayMusicInfo(nextPlayMusicInfo.listId, nextPlayMusicInfo.musicInfo)
-  await handlePlay()
+  if(playMusicInfo.listId === LIST_IDS.DOWNLOAD) await handleLocalPlay()
+  else await handlePlay()
 }
 
 /**

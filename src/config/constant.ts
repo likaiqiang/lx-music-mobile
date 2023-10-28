@@ -72,6 +72,7 @@ export const storageDataPrefix = {
   cheatTip: '@cheat_tip',
 
   dislikeList: '@dislike_list',
+  downloadList: '@download_list'
 } as const
 
 // v0.x.x 版本的 data keys

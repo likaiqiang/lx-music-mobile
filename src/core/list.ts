@@ -46,7 +46,8 @@ export const updateUserListPosition = async(position: number, ids: string[]) => 
 /**
  * 批量添加歌曲到列表
  */
-export const addListMusics = async(id: string, musicInfos: LX.Music.MusicInfo[], addMusicLocationType: LX.AddMusicLocationType) => {
+export const addListMusics = async(id: string, musicInfos: LX.Music.MusicInfo[] | LX.Music.MusicInfoDownloaded[], addMusicLocationType: LX.AddMusicLocationType) => {
+  console.log('addListMusics',musicInfos);
   await global.list_event.list_music_add(id, musicInfos, addMusicLocationType)
 }
 

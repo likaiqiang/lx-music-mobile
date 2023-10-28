@@ -112,6 +112,8 @@ const setPlayerMusicInfo = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
  * @param isTempPlay 是否临时播放
  */
 export const setPlayMusicInfo = (listId: string | null, musicInfo: LX.Download.ListItem | LX.Music.MusicInfo | null, isTempPlay: boolean = false) => {
+  console.log('setPlayMusicInfo',listId,musicInfo);
+
   playerActions.setPlayMusicInfo(listId, musicInfo, isTempPlay)
   setPlayerMusicInfo(musicInfo)
 
@@ -130,5 +132,5 @@ export const setPlayMusicInfo = (listId: string | null, musicInfo: LX.Download.L
 
 export const getList = (listId: string | null): LX.Music.MusicInfo[] | LX.Download.ListItem[] => {
   // return listId == LIST_ID_DOWNLOAD ? downloadList : getListMusicSync(listId)
-  return listId == LIST_IDS.DOWNLOAD ? [] : getListMusicSync(listId)
+  return getListMusicSync(listId)
 }

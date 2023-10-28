@@ -18,6 +18,7 @@ export const SETTING_SCREENS = [
   'lyric_desktop',
   'search',
   'list',
+  'download',
   'sync',
   'backup',
   'other',

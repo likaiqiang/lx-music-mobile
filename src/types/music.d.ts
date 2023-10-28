@@ -31,8 +31,9 @@ declare namespace LX {
     }
 
     interface MusicInfoMeta_local extends MusicInfoMetaBase {
-      filePath: string
+      fileName: string
       ext: string
+      filePath: string
     }
 
 
@@ -82,6 +83,7 @@ declare namespace LX {
     }
 
     type MusicInfoOnline = MusicInfo_online_common | MusicInfo_kg | MusicInfo_tx | MusicInfo_mg
+    type MusicInfoDownloaded = MusicInfoLocal
     type MusicInfo = MusicInfoOnline | MusicInfoLocal
 
     interface LyricInfo {
@@ -117,6 +119,5 @@ declare namespace LX {
       id: string
       list: MusicInfoOnline[]
     }
-
   }
 }

@@ -14,6 +14,7 @@ import ListSearchBar, { type ListSearchBarType } from './ListSearchBar'
 import ListMusicSearch, { type ListMusicSearchType } from './ListMusicSearch'
 import MusicPositionModal, { type MusicPositionModalType } from './MusicPositionModal'
 import {downloadMusic} from "@/core/music/utils";
+import {useSettingValue} from "@/store/setting/hook";
 
 
 export default () => {
@@ -30,6 +31,9 @@ export default () => {
   const layoutHeightRef = useRef<number>(0)
   const isShowMultipleModeBar = useRef(false)
   const isShowSearchBarModeBar = useRef(false)
+  const isDownloadLrc = useSettingValue('download.isDownloadLrc')
+  const isEnableDownload = useSettingValue('download.enable')
+  const isSkipFile = useSettingValue('download.skipIfFileExists')
   // console.log('render index list')
 
   const hancelMultiSelect = () => {
@@ -146,7 +150,7 @@ export default () => {
         onMove={handleMoveMusic}
         onChangePosition={info => musicPositionModalRef.current?.show(info)}
         onDownload={(info)=>{
-          downloadMusic(info.musicInfo as LX.Music.MusicInfoOnline)
+          downloadMusic(info.musicInfo as LX.Music.MusicInfoOnline,{isDownloadLrc, isEnableDownload, isSkipFile})
         }}
       />
     </View>

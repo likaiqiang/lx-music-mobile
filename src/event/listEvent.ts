@@ -169,6 +169,7 @@ export class ListEvent extends Event {
   async list_music_add(listId: string, musicInfos: LX.Music.MusicInfo[], addMusicLocationType: LX.AddMusicLocationType, isRemote: boolean = false) {
     const changedIds = await listMusicAdd(listId, musicInfos, addMusicLocationType)
     await checkUpdateList(changedIds)
+    console.log('list_music_add changedIds',changedIds);
     this.emit('list_music_add', listId, musicInfos, addMusicLocationType, isRemote)
   }
 

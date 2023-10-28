@@ -310,6 +310,21 @@ declare global {
        * 是否启用同步
        */
       'sync.enable': boolean
+
+      /**
+       * 是否启用下载
+       */
+      'download.enable': boolean
+
+      /**
+       * 是否下载歌词
+       */
+      'download.isDownloadLrc': boolean
+
+      /**
+       * 下载目录存在同名文件是否跳过此任务
+       */
+      'download.skipIfFileExists': boolean
     }
   }
 }

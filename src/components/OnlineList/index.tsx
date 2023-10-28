@@ -9,6 +9,7 @@ import MultipleModeBar, { type MultipleModeBarType, type SelectMode } from './Mu
 import { handleDislikeMusic, handlePlay, handlePlayLater, handleShare } from './listAction'
 import { createStyle } from '@/utils/tools'
 import {downloadMusic} from "@/core/music/utils";
+import {useSettingValue} from "@/store/setting/hook";
 
 export interface OnlineListProps {
   onRefresh: ListProps['onRefresh']
@@ -38,6 +39,9 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
   const listMusicAddRef = useRef<ListMusicAddType>(null)
   const listMusicMultiAddRef = useRef<ListAddMultiType>(null)
   const listMenuRef = useRef<ListMenuType>(null)
+  const isDownloadLrc = useSettingValue('download.isDownloadLrc')
+  const isEnableDownload = useSettingValue('download.enable')
+  const isSkipFile = useSettingValue('download.skipIfFileExists')
   // const loadingMaskRef = useRef<LoadingMaskType>(null)
 
   useImperativeHandle(ref, () => ({
@@ -111,7 +115,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
         onCopyName={info => { handleShare(info.musicInfo) }}
         onAdd={handleAddMusic}
         onDownload={(info)=>{
-          downloadMusic(info.musicInfo)
+          downloadMusic(info.musicInfo,{isDownloadLrc,isEnableDownload,isSkipFile})
         }}
         onDislikeMusic={info => { void handleDislikeMusic(info.musicInfo) }}
       />

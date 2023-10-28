@@ -14,18 +14,30 @@ let isPlaying = false
 let prevDuration = -1
 
 const formatMusicInfo = (musicInfo: LX.Player.PlayMusic) => {
-  return 'progress' in musicInfo ? {
-    id: musicInfo.id,
-    pic: musicInfo.metadata.musicInfo.meta.picUrl,
-    name: musicInfo.metadata.musicInfo.name,
-    singer: musicInfo.metadata.musicInfo.singer,
-    album: musicInfo.metadata.musicInfo.meta.albumName,
-  } : {
-    id: musicInfo.id,
-    pic: musicInfo.meta.picUrl,
+  if('progress' in musicInfo){
+    return {
+      id: musicInfo.id,
+      pic: musicInfo.metadata.musicInfo.meta.picUrl,
+      name: musicInfo.metadata.musicInfo.name,
+      singer: musicInfo.metadata.musicInfo.singer,
+      album: musicInfo.metadata.musicInfo.meta.albumName,
+    }
+  }
+  if(musicInfo.id){
+    return {
+      id: musicInfo.id,
+      pic: musicInfo.meta.picUrl,
+      name: musicInfo.name,
+      singer: musicInfo.singer,
+      album: musicInfo.meta.albumName,
+    }
+  }
+  return {
+    id: "id__local__" + Math.random(),
+    pic: '',
     name: musicInfo.name,
-    singer: musicInfo.singer,
-    album: musicInfo.meta.albumName,
+    singer: '',
+    album: '',
   }
 }
 
@@ -166,6 +178,7 @@ let playPromise = Promise.resolve()
 let actionId = Math.random()
 export const playMusic = (musicInfo: LX.Player.PlayMusic, url: string, time: number) => {
   const id = actionId = Math.random()
+  console.log('playMusic',url);
   void playPromise.finally(() => {
     if (id != actionId) return
     playPromise = handlePlayMusic(musicInfo, url, time)

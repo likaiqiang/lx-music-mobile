@@ -51,7 +51,7 @@ export default () => {
 
   const handleLongPress = () => {
     const listId = playerState.playMusicInfo.listId
-    if (!listId || listId == LIST_IDS.DOWNLOAD) return
+    if (!listId) return
     global.app_event.jumpListPosition()
   }
 

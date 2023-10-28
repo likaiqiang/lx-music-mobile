@@ -12,16 +12,14 @@ import Text from '@/components/common/Text'
 import { handlePlay } from '@/components/OnlineList/listAction'
 import { useSettingValue } from '@/store/setting/hook'
 
-type FlatListType = FlatListProps<LX.Music.MusicInfoOnline>
+type FlatListType = FlatListProps<LX.Music.MusicInfoDownloaded>
 
 export type {
   RowInfoType,
 }
 
 export interface ListProps {
-  onShowMenu: (musicInfo: LX.Music.MusicInfoOnline, index: number, position: Position) => void
-  onMuiltSelectMode: () => void
-  onSelectAll: (isAll: boolean) => void
+  list: LX.Music.MusicInfoDownloaded[]
   onRefresh: () => void
   onLoadMore: () => void
   onPlayList?: (index: number) => void
@@ -31,22 +29,16 @@ export interface ListProps {
   rowType?: RowInfoType
 }
 export interface ListType {
-  setList: (list: LX.Music.MusicInfoOnline[], isAppend: boolean, showSource: boolean) => void
-  setIsMultiSelectMode: (isMultiSelectMode: boolean) => void
-  setSelectMode: (mode: SelectMode) => void
-  selectAll: (isAll: boolean) => void
-  getSelectedList: () => LX.Music.MusicInfoOnline[]
-  getList: () => LX.Music.MusicInfoOnline[]
+  setList: (list: LX.Music.MusicInfoDownloaded[], isAppend: boolean, showSource: boolean) => void
+  getList: () => LX.Music.MusicInfoDownloaded[]
   setStatus: (val: Status) => void
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
 
 const List = forwardRef<ListType, ListProps>(({
-                                                onMuiltSelectMode,
-                                                onSelectAll,
+                                                list,
                                                 onRefresh,
-                                                onShowMenu,
                                                 onLoadMore,
                                                 onPlayList,
                                                 progressViewOffset,
@@ -56,13 +48,7 @@ const List = forwardRef<ListType, ListProps>(({
   // const t = useI18n()
   const theme = useTheme()
   const flatListRef = useRef<FlatList>(null)
-  const [currentList, setList] = useState<LX.Music.MusicInfoOnline[]>([])
   const [showSource, setShowSource] = useState(false)
-  const isMultiSelectModeRef = useRef(false)
-  const selectModeRef = useRef<SelectMode>('single')
-  const prevSelectIndexRef = useRef(-1)
-  const [selectedList, setSelectedList] = useState<LX.Music.MusicInfoOnline[]>([])
-  const selectedListRef = useRef<LX.Music.MusicInfoOnline[]>([])
   const [visibleMultiSelect, setVisibleMultiSelect] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const rowInfo = useRef(getRowInfo(rowType))
@@ -70,65 +56,16 @@ const List = forwardRef<ListType, ListProps>(({
   const isShowInterval = useSettingValue('list.isShowInterval')
 
 
-  const handleUpdateSelectedList = (newList: LX.Music.MusicInfoOnline[]) => {
-    if (selectedListRef.current.length && newList.length == currentList.length) onSelectAll(true)
-    else if (selectedListRef.current.length == currentList.length) onSelectAll(false)
-    selectedListRef.current = newList
-    setSelectedList(newList)
-  }
-  const handleSelect = (item: LX.Music.MusicInfoOnline, pressIndex: number) => {
-    let newList: LX.Music.MusicInfoOnline[]
-    if (selectModeRef.current == 'single') {
-      prevSelectIndexRef.current = pressIndex
-      const index = selectedListRef.current.indexOf(item)
-      if (index < 0) {
-        newList = [...selectedListRef.current, item]
-      } else {
-        newList = [...selectedListRef.current]
-        newList.splice(index, 1)
-      }
-    } else {
-      if (selectedListRef.current.length) {
-        const prevIndex = prevSelectIndexRef.current
-        const currentIndex = pressIndex
-        if (prevIndex == currentIndex) {
-          newList = []
-        } else if (currentIndex > prevIndex) {
-          newList = currentList.slice(prevIndex, currentIndex + 1)
-        } else {
-          newList = currentList.slice(currentIndex, prevIndex + 1)
-          newList.reverse()
-        }
-      } else {
-        newList = [item]
-        prevSelectIndexRef.current = pressIndex
-      }
-    }
-
-    handleUpdateSelectedList(newList)
-  }
-
-  const handlePress = (item: LX.Music.MusicInfoOnline, index: number) => {
+  const handlePress = (item: LX.Music.MusicInfoDownloaded, index: number) => {
     requestAnimationFrame(() => {
       if (checkHomePagerIdle && !global.lx.homePagerIdle) return
-      if (isMultiSelectModeRef.current) {
-        handleSelect(item, index)
+      if (settingState.setting['list.isClickPlayList'] && onPlayList != null) {
+        onPlayList(index)
       } else {
-        if (settingState.setting['list.isClickPlayList'] && onPlayList != null) {
-          onPlayList(index)
-        } else {
-          // console.log(currentList[index])
-          handlePlay(currentList[index])
-        }
+        // console.log(currentList[index])
+        handlePlay(list[index])
       }
     })
-  }
-
-  const handleLongPress = (item: LX.Music.MusicInfoOnline, index: number) => {
-    if (isMultiSelectModeRef.current) return
-    prevSelectIndexRef.current = index
-    handleUpdateSelectedList([item])
-    onMuiltSelectMode()
   }
 
 
@@ -137,10 +74,7 @@ const List = forwardRef<ListType, ListProps>(({
       item={item}
       index={index}
       showSource={showSource}
-      onShowMenu={onShowMenu}
       onPress={handlePress}
-      onLongPress={handleLongPress}
-      selectedList={selectedList}
       rowInfo={rowInfo.current}
       isShowAlbumName={isShowAlbumName}
       isShowInterval={isShowInterval}
@@ -185,7 +119,7 @@ const List = forwardRef<ListType, ListProps>(({
     <FlatList
       ref={flatListRef}
       style={styles.list}
-      data={currentList}
+      data={list}
       numColumns={rowInfo.current.rowNum}
       horizontal={false}
       maxToRenderPerBatch={4}

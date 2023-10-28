@@ -60,6 +60,7 @@ export const registerListActionEvent = (sendListAction: (action: LX.Sync.List.Ac
     await sendListAction({ action: 'list_music_overwrite', data: { listId, musicInfos } })
   }
   const list_music_add = async(id: string, musicInfos: LX.Music.MusicInfo[], addMusicLocationType: LX.AddMusicLocationType, isRemote: boolean = false) => {
+    console.log('on list_music_add',musicInfos);
     if (isRemote) return
     await sendListAction({ action: 'list_music_add', data: { id, musicInfos, addMusicLocationType } })
   }
