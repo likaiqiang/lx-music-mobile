@@ -171,7 +171,7 @@ const SettingPage = () => {
 }
 
 const DownloadPage = () => {
-  const [visible, setVisible] = useState(commonState.navActiveId == 'nav_setting')
+  const [visible, setVisible] = useState(commonState.navActiveId == 'nav_download')
   const component = useMemo(() => <Download />, [])
   useEffect(() => {
     const handleNavIdUpdate = (id: CommonState['navActiveId']) => {

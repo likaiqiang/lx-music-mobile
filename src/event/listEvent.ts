@@ -153,10 +153,10 @@ export class ListEvent extends Event {
    * @param musicInfos 音乐信息
    * @param isRemote 是否属于远程操作
    */
-  async list_music_overwrite(listId: string, musicInfos: LX.Music.MusicInfo[], isRemote: boolean = false) {
+  async list_music_overwrite(listId: string, musicInfos: LX.Music.MusicInfo[], isRemote: boolean = false, shouldEmit= true) {
     const changedIds = await listMusicOverwrite(listId, musicInfos)
     await checkUpdateList(changedIds)
-    this.emit('list_music_overwrite', listId, musicInfos, isRemote)
+    shouldEmit && this.emit('list_music_overwrite', listId, musicInfos, isRemote)
   }
 
   /**
@@ -169,7 +169,6 @@ export class ListEvent extends Event {
   async list_music_add(listId: string, musicInfos: LX.Music.MusicInfo[], addMusicLocationType: LX.AddMusicLocationType, isRemote: boolean = false) {
     const changedIds = await listMusicAdd(listId, musicInfos, addMusicLocationType)
     await checkUpdateList(changedIds)
-    console.log('list_music_add changedIds',changedIds);
     this.emit('list_music_add', listId, musicInfos, addMusicLocationType, isRemote)
   }
 

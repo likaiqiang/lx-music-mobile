@@ -148,7 +148,6 @@ export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
     })
   }
   else{
-    console.log('source 2', musicInfo);
     const _musicInfo = musicInfo as LX.Music.MusicInfoDownloaded
     setResource(_musicInfo, _musicInfo.meta.filePath, playerState.progress.nowPlayTime)
     if (_musicInfo === playerState.playMusicInfo.musicInfo) {
@@ -239,8 +238,6 @@ const handleLocalPlay = async ()=>{
 
   const playMusicInfo = playerState.playMusicInfo
   const musicInfo = playMusicInfo.musicInfo
-
-  console.log('playMusicInfo',playMusicInfo);
 
   if (!musicInfo) return
 
@@ -344,7 +341,6 @@ const handlePlay = async() => {
  * @param index 播放的歌曲位置
  */
 export const playList = async(listId: string, index: number) => {
-  console.log('playList',listId);
   await pause()
   const prevListId = playerState.playInfo.playerListId
   setPlayListId(listId)

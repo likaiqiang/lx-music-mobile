@@ -23,21 +23,12 @@ const formatMusicInfo = (musicInfo: LX.Player.PlayMusic) => {
       album: musicInfo.metadata.musicInfo.meta.albumName,
     }
   }
-  if(musicInfo.id){
-    return {
-      id: musicInfo.id,
-      pic: musicInfo.meta.picUrl,
-      name: musicInfo.name,
-      singer: musicInfo.singer,
-      album: musicInfo.meta.albumName,
-    }
-  }
   return {
-    id: "id__local__" + Math.random(),
-    pic: '',
-    name: musicInfo.name,
-    singer: '',
-    album: '',
+    id: musicInfo.id,
+    pic: musicInfo.meta.picUrl || '',
+    name: musicInfo.name || '',
+    singer: musicInfo.singer || '',
+    album: musicInfo.meta.albumName || '',
   }
 }
 

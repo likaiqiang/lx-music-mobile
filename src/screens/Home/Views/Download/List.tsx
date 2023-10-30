@@ -9,8 +9,11 @@ import settingState from '@/store/setting/state'
 import { MULTI_SELECT_BAR_HEIGHT } from '@/components/OnlineList/MultipleModeBar'
 import { useI18n } from '@/lang'
 import Text from '@/components/common/Text'
-import { handlePlay } from '@/components/OnlineList/listAction'
+import {handlelocalPlay, handlePlay} from '@/components/OnlineList/listAction'
 import { useSettingValue } from '@/store/setting/hook'
+import playerState from "@/store/player/state";
+import {useActiveListId} from "@/store/list/hook";
+import {usePlayInfo, usePlayMusicInfo} from "@/store/player/hook";
 
 type FlatListType = FlatListProps<LX.Music.MusicInfoDownloaded>
 
@@ -20,6 +23,7 @@ export type {
 
 export interface ListProps {
   list: LX.Music.MusicInfoDownloaded[]
+  playid: string
   onRefresh: () => void
   onLoadMore: () => void
   onPlayList?: (index: number) => void
@@ -27,11 +31,13 @@ export interface ListProps {
   ListHeaderComponent?: FlatListType['ListEmptyComponent']
   checkHomePagerIdle: boolean
   rowType?: RowInfoType
+  onPress?: (item: LX.Music.MusicInfoDownloaded)=>void
 }
 export interface ListType {
-  setList: (list: LX.Music.MusicInfoDownloaded[], isAppend: boolean, showSource: boolean) => void
-  getList: () => LX.Music.MusicInfoDownloaded[]
-  setStatus: (val: Status) => void
+  // setList: (list: LX.Music.MusicInfoDownloaded[], isAppend: boolean, showSource: boolean) => void
+  // getList: () => LX.Music.MusicInfoDownloaded[]
+  // setStatus: (val: Status) => void
+  jumpPosition: ()=> void
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
@@ -40,10 +46,11 @@ const List = forwardRef<ListType, ListProps>(({
                                                 list,
                                                 onRefresh,
                                                 onLoadMore,
-                                                onPlayList,
                                                 progressViewOffset,
                                                 checkHomePagerIdle,
                                                 rowType,
+                                                playid,
+                                                onPress
                                               }, ref) => {
   // const t = useI18n()
   const theme = useTheme()
@@ -55,31 +62,44 @@ const List = forwardRef<ListType, ListProps>(({
   const isShowAlbumName = useSettingValue('list.isShowAlbumName')
   const isShowInterval = useSettingValue('list.isShowInterval')
 
-
   const handlePress = (item: LX.Music.MusicInfoDownloaded, index: number) => {
     requestAnimationFrame(() => {
       if (checkHomePagerIdle && !global.lx.homePagerIdle) return
-      if (settingState.setting['list.isClickPlayList'] && onPlayList != null) {
-        onPlayList(index)
-      } else {
-        // console.log(currentList[index])
-        handlePlay(list[index])
-      }
+      // if (settingState.setting['list.isClickPlayList'] && onPlayList != null) {
+      //   onPlayList(index)
+      // } else {
+      //   // console.log(currentList[index])
+      //   handlelocalPlay(list[index])
+      // }
+      handlelocalPlay(list[index])
+      onPress?.(item)
     })
   }
-
-
-  const renderItem: FlatListType['renderItem'] = ({ item, index }) => (
-    <ListItem
-      item={item}
-      index={index}
-      showSource={showSource}
-      onPress={handlePress}
-      rowInfo={rowInfo.current}
-      isShowAlbumName={isShowAlbumName}
-      isShowInterval={isShowInterval}
-    />
-  )
+  useImperativeHandle(ref,()=>{
+    const activeIndex = list.findIndex(item=>item.id === playid)
+    return {
+      jumpPosition(){
+        if(activeIndex > -1){
+          flatListRef.current?.scrollToIndex({ index: activeIndex, viewPosition: 0.3, animated: true })
+        }
+      }
+    }
+  })
+  const renderItem: FlatListType['renderItem'] = ({ item, index }) => {
+    const isActive = item.id === playid
+    return (
+        <ListItem
+            item={item}
+            index={index}
+            showSource={showSource}
+            onPress={handlePress}
+            rowInfo={rowInfo.current}
+            isShowAlbumName={isShowAlbumName}
+            isShowInterval={isShowInterval}
+            isActive={isActive}
+        />
+    )
+  }
   const getkey: FlatListType['keyExtractor'] = item => item.id
   const getItemLayout: FlatListType['getItemLayout'] = (data, index) => {
     return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }

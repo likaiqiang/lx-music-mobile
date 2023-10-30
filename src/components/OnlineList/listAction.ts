@@ -9,25 +9,17 @@ import { addDislikeInfo, hasDislike } from '@/core/dislikeList'
 import playerState from '@/store/player/state'
 
 export const handlelocalPlay = (musicInfo: LX.Music.MusicInfoLocal)=>{
-  void addListMusics(LIST_IDS.DOWNLOAD, [musicInfo], settingState.setting['list.addMusicLocationType']).then(() => {
-    const index = (getListMusicSync(LIST_IDS.DOWNLOAD) as LX.Music.MusicInfoLocal[]).findIndex(m => m.id == musicInfo.id)
-    if (index < 0) return
-    void playList(LIST_IDS.DOWNLOAD, index)
-  })
+  const index = (getListMusicSync(LIST_IDS.DOWNLOAD) as LX.Music.MusicInfoLocal[]).findIndex(m => m.id == musicInfo.id)
+  if (index < 0) return
+  void playList(LIST_IDS.DOWNLOAD, index)
 }
 
 export const handlePlay = (musicInfo: LX.Music.MusicInfo) => {
-  // TODO
-  if((musicInfo as LX.Music.MusicInfoLocal).source === 'local'){
-    handlelocalPlay(musicInfo as LX.Music.MusicInfoLocal)
-  }
-  else{
-    void addListMusics(LIST_IDS.DEFAULT, [musicInfo], settingState.setting['list.addMusicLocationType']).then(() => {
-      const index = getListMusicSync(LIST_IDS.DEFAULT).findIndex(m => m.id == musicInfo.id)
-      if (index < 0) return
-      void playList(LIST_IDS.DEFAULT, index)
-    })
-  }
+  void addListMusics(LIST_IDS.DEFAULT, [musicInfo], settingState.setting['list.addMusicLocationType']).then(() => {
+    const index = getListMusicSync(LIST_IDS.DEFAULT).findIndex(m => m.id == musicInfo.id)
+    if (index < 0) return
+    void playList(LIST_IDS.DEFAULT, index)
+  })
 }
 export const handlePlayLater = (musicInfo: LX.Music.MusicInfoOnline, selectedList: LX.Music.MusicInfoOnline[], onCancelSelect: () => void) => {
   if (selectedList.length) {
