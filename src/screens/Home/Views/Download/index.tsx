@@ -15,6 +15,7 @@ import {getListMusicSync} from "@/utils/listManage";
 import {setList} from "@/core/songlist";
 import state from "@/store/player/state";
 import BackgroundTimer from "react-native-background-timer";
+import {usePlayMusicInfo} from "@/store/player/hook";
 
 const scanMusicFiles = async (): Promise<string[]> =>{
   await requestStoragePermission()
@@ -75,8 +76,9 @@ export default () => {
   const listRef = useRef<ListType>(null)
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
   const [playid, setPlayId] = useState(state.playMusicInfo.musicInfo?.id || '')
+
+  const playMusicInfo = usePlayMusicInfo()
   const updateDownloadedList = async ():Promise<void> =>{
-    setPlayId(state.playMusicInfo.musicInfo?.id || '')
     void scanMusicFiles().then(files=>{
       console.log('scanMusicFiles', files);
       const updatedList = getConcatMusicInfos(files)
@@ -122,9 +124,9 @@ export default () => {
         }}
         checkHomePagerIdle={false}
         list={list}
-        playid={playid}
+        playid={playMusicInfo.musicInfo?.id || ''}
         onPress={(item)=>{
-          setPlayId(item.id)
+
         }}
       />
     </View>
