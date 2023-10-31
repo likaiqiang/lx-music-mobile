@@ -40,10 +40,18 @@ function generateRandomId() {
 
 function getConcatMusicInfos(fileNames: string[]): LX.Music.MusicInfoDownloaded[] {
   const downloadList = (getListMusicSync(LIST_IDS.DOWNLOAD) || []) as LX.Music.MusicInfoDownloaded[]
-  return downloadList.concat(fileNames.filter(fileName => {
-    const path = `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music/${fileName}`
-    return !downloadList.some(item => item.meta.filePath === path)
-  }).map(generateEmptyLocalMusicInfo))
+  if(fileNames.length >= downloadList.length){
+    return downloadList.concat(fileNames.filter(fileName => {
+      const path = `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music/${fileName}`
+      return !downloadList.some(item => item.meta.filePath === path)
+    }).map(generateEmptyLocalMusicInfo))
+  }
+  else {
+    const paths = fileNames.map(fileName=> `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music/${fileName}`)
+    return downloadList.filter(musicInfo=>{
+      return paths.includes(musicInfo.meta.filePath)
+    })
+  }
 }
 
 
@@ -67,15 +75,9 @@ function generateEmptyLocalMusicInfo(fullName: string): LX.Music.MusicInfoDownlo
   }
 }
 
-const useUpadte = ()=>{
-  const [count, setCount] = useState(0)
-  return ()=> setCount(count + 1)
-}
-
 export default () => {
   const listRef = useRef<ListType>(null)
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
-  const [playid, setPlayId] = useState(state.playMusicInfo.musicInfo?.id || '')
 
   const playMusicInfo = usePlayMusicInfo()
   const updateDownloadedList = async ():Promise<void> =>{
@@ -113,7 +115,6 @@ export default () => {
       appStateSubscription.remove()
     }
   }, []);
-  const forceUpdate = useUpadte()
   return (
     <View style={styles.container}>
       <List
