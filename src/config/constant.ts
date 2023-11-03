@@ -73,6 +73,8 @@ export const storageDataPrefix = {
   cheatTip: '@cheat_tip',
 
   dislikeList: '@dislike_list',
+
+  userApi: '@user_api__',
   downloadList: '@download_list'
 } as const
 
@@ -106,6 +108,7 @@ export const NAV_MENUS = [
 export type NAV_ID_Type = typeof NAV_MENUS[number]['id']
 
 export const LXM_FILE_EXT_RXP = /\.(json|lxmc)$/
+export const USER_API_SOURCE_FILE_EXT_RXP = /\.(js)$/
 
 export const MUSIC_TOGGLE_MODE = {
   listLoop: 'listLoop', // 列表循环
