@@ -269,13 +269,12 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
   const getItemLayout: FlatListType['getItemLayout'] = (data, index) => {
     return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }
   }
-
   return (
     <FlatList
       ref={flatListRef}
       onScroll={handleScroll}
       style={styles.list}
-      data={currentList}
+      data={currentList.filter(item=>item.source !== 'local')}
       maxToRenderPerBatch={4}
       numColumns={rowInfo.current.rowNum}
       horizontal={false}

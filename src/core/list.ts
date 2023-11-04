@@ -47,7 +47,6 @@ export const updateUserListPosition = async(position: number, ids: string[]) => 
  * 批量添加歌曲到列表
  */
 export const addListMusics = async(id: string, musicInfos: LX.Music.MusicInfo[] | LX.Music.MusicInfoDownloaded[], addMusicLocationType: LX.AddMusicLocationType) => {
-  console.log('addListMusics',musicInfos);
   await global.list_event.list_music_add(id, musicInfos, addMusicLocationType)
 }
 
@@ -82,8 +81,8 @@ export const updateListMusicPosition = async(listId: string, position: number, i
 /**
  * 覆盖列表内的歌曲
  */
-export const overwriteListMusics = async(listId: string, musicInfos: LX.Music.MusicInfo[]) => {
-  await global.list_event.list_music_overwrite(listId, musicInfos)
+export const overwriteListMusics = async(listId: string, musicInfos: LX.Music.MusicInfo[], shouldEmit?: boolean) => {
+  await global.list_event.list_music_overwrite(listId, musicInfos, false, shouldEmit)
 }
 
 /**

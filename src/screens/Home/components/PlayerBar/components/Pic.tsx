@@ -52,7 +52,12 @@ export default () => {
   const handleLongPress = () => {
     const listId = playerState.playMusicInfo.listId
     if (!listId) return
-    global.app_event.jumpListPosition()
+    if(listId == LIST_IDS.DOWNLOAD){
+      global.app_event.jumpDownloadListPosition()
+    }
+    else {
+      global.app_event.jumpListPosition()
+    }
   }
 
   // console.log('render pic')

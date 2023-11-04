@@ -149,7 +149,6 @@ const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: numb
 })
 
 export const setResource = (musicInfo: LX.Player.PlayMusic, url: string, duration?: number) => {
-  console.log('setResource',url);
   playMusic(musicInfo, url, duration ?? 0)
 }
 

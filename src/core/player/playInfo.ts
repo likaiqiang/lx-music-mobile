@@ -31,29 +31,17 @@ export const getPlayIndex = (listId: string | null, musicInfo: LX.Download.ListI
   playIndex: number
   playerPlayIndex: number
 } => {
-  const { playInfo } = playerState
-  const playerList = getListMusicSync(playInfo.playerListId)
+  const { playInfo } = playerState;
+  const playerList = getListMusicSync(playInfo.playerListId);
+  let playerPlayIndex = playerList.length ? Math.min(playInfo.playerPlayIndex, playerList.length - 1) : -1;
 
-  // if (listIndex < 0) throw new Error('music info not found')
-  // playInfo.playIndex = listIndex
+  const list = getListMusicSync(listId);
+  const playIndex = list.findIndex(m => m.id == musicInfo?.id);
 
-  let playIndex = -1
-  let playerPlayIndex = -1
-  if (playerList.length) {
-    playerPlayIndex = Math.min(playInfo.playerPlayIndex, playerList.length - 1)
-  }
-
-  const list = getListMusicSync(listId)
-  if (list.length && musicInfo) {
-    const currentId = musicInfo.id
-    playIndex = list.findIndex(m => m.id == currentId)
-    if (!isTempPlay) {
-      if (playIndex < 0) {
-        playerPlayIndex = playerPlayIndex < 1 ? (list.length - 1) : (playerPlayIndex - 1)
-      } else {
-        playerPlayIndex = playIndex
-      }
-    }
+  if (!isTempPlay && playIndex < 0) {
+    playerPlayIndex = playerPlayIndex < 1 ? (list.length - 1) : (playerPlayIndex - 1);
+  } else {
+    playerPlayIndex = playIndex;
   }
 
   return {
@@ -112,7 +100,6 @@ const setPlayerMusicInfo = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
  * @param isTempPlay 是否临时播放
  */
 export const setPlayMusicInfo = (listId: string | null, musicInfo: LX.Download.ListItem | LX.Music.MusicInfo | null, isTempPlay: boolean = false) => {
-  console.log('setPlayMusicInfo',listId,musicInfo);
 
   playerActions.setPlayMusicInfo(listId, musicInfo, isTempPlay)
   setPlayerMusicInfo(musicInfo)
@@ -124,7 +111,6 @@ export const setPlayMusicInfo = (listId: string | null, musicInfo: LX.Download.L
     setPlayListId(null)
   } else {
     const { playIndex, playerPlayIndex } = getPlayIndex(listId, musicInfo, isTempPlay)
-
     playerActions.updatePlayIndex(playIndex, playerPlayIndex)
     global.app_event.musicToggled()
   }

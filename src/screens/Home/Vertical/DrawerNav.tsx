@@ -100,7 +100,6 @@ export default memo(() => {
   // console.log('render drawer nav')
   const showBackBtn = useSettingValue('common.showBackBtn')
   const showExitBtn = useSettingValue('common.showExitBtn')
-  const isEnableDownload = useSettingValue('download.enable')
 
   const handlePress = (id: IdType) => {
     switch (id) {
@@ -121,10 +120,7 @@ export default memo(() => {
     global.app_event.changeMenuVisible(false)
     setNavActiveId(id)
   }
-  const nav_menus = NAV_MENUS.filter(item=>{
-    if(item.id !== 'nav_download') return true
-    return isEnableDownload
-  })
+  const nav_menus =  NAV_MENUS
 
   return (
     <View style={{ ...styles.container, backgroundColor: theme['c-content-background'] }}>
