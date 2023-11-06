@@ -1,57 +1,86 @@
-import { useRef, useImperativeHandle, forwardRef, useState } from 'react'
+import {useRef, useImperativeHandle, forwardRef, useState, useCallback} from 'react'
 import Text from '@/components/common/Text'
-import { View, TouchableOpacity } from 'react-native'
-import { createStyle, openUrl, tipDialog } from '@/utils/tools'
+import {View, TouchableOpacity, LayoutChangeEvent} from 'react-native'
+import {createStyle, openUrl, tipDialog, toast} from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import Dialog, { type DialogType } from '@/components/common/Dialog'
 import Button from '@/components/common/Button'
 import List from './List'
 import ScriptImportExport, { type ScriptImportExportType } from './ScriptImportExport'
-import { state } from '@/store/userApi'
+import {state, useUserApiList} from '@/store/userApi'
+import Input, {InputType} from "@/components/common/Input";
+import RNFetchBlob from "rn-fetch-blob";
+import {importUserApi} from "@/core/userApi";
 
-// interface UrlInputType {
-//   setText: (text: string) => void
-//   getText: () => string
-//   focus: () => void
-// }
-// const UrlInput = forwardRef<UrlInputType, {}>((props, ref) => {
-//   const theme = useTheme()
-//   const t = useI18n()
-//   const [text, setText] = useState('')
-//   const inputRef = useRef<InputType>(null)
-//   const [height, setHeight] = useState(100)
 
-//   useImperativeHandle(ref, () => ({
-//     getText() {
-//       return text.trim()
-//     },
-//     setText(text) {
-//       setText(text)
-//     },
-//     focus() {
-//       inputRef.current?.focus()
-//     },
-//   }))
+async function downloadAndReadFile(url:string) {
+  try {
+    const filenameMatch = url.match(/[^/]+$/)
+    const filename = filenameMatch ? filenameMatch[0] : `source_${Date.now()}.js`
+    // 定義一個本地路徑保存文件
+    const fetchBlob = RNFetchBlob.config({
+      path: RNFetchBlob.fs.dirs.DownloadDir + '/lx.music.source/' + filename
+    });
+    const path = (await fetchBlob.fetch('GET', url)).path()
+    return await RNFetchBlob.fs.readFile(path, 'utf8');
 
-//   const handleLayout = useCallback(({ nativeEvent }: LayoutChangeEvent) => {
-//     setHeight(nativeEvent.layout.height)
-//   }, [])
+  } catch (error) {
+    return Promise.reject(error)
+  }
+}
 
-//   return (
-//     <View style={styles.inputContent} onLayout={handleLayout}>
-//       <Input
-//         ref={inputRef}
-//         value={text}
-//         onChangeText={setText}
-//         textAlignVertical="top"
-//         placeholder={t('setting_dislike_list_input_tip')}
-//         size={12}
-//         style={{ ...styles.input, height, backgroundColor: theme['c-primary-input-background'] }}
-//       />
-//     </View>
-//   )
-// })
+interface UrlInputType {
+  setText: (text: string) => void
+  getText: () => string
+  focus: () => void
+}
+const UrlInput = forwardRef<UrlInputType, {}>((props, ref) => {
+  const theme = useTheme()
+  const t = useI18n()
+  const [text, setText] = useState('')
+  const inputRef = useRef<InputType>(null)
+  const [height, setHeight] = useState(100)
+
+  useImperativeHandle(ref, () => ({
+    getText() {
+      return text.trim()
+    },
+    setText(text) {
+      setText(text)
+    },
+    focus() {
+      inputRef.current?.focus()
+    },
+  }))
+
+  return (
+    <View style={{height}}>
+      <Input
+        ref={inputRef}
+        value={text}
+        onChangeText={setText}
+        textAlignVertical="top"
+        placeholder={'请输入source url'}
+        size={12}
+        style={{backgroundColor: theme['c-primary-input-background'] }}
+        onLayout={e=>{
+          setHeight(e.nativeEvent.layout.height)
+        }}
+        multiline
+        returnKeyType={'done'}
+        blurOnSubmit={true}
+        onSubmitEditing={ async ()=>{
+          if(text.trim().length && /^https?:\/\//.test(text.trim())){
+            toast('正在加载请稍后...')
+            const script = await downloadAndReadFile(text)
+            await importUserApi(script)
+          }
+        }}
+      />
+    </View>
+  )
+})
 
 
 // export interface UserApiEditModalProps {
@@ -66,10 +95,11 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
   const dialogRef = useRef<DialogType>(null)
   const scriptImportExportRef = useRef<ScriptImportExportType>(null)
   // const sourceSelectorRef = useRef<SourceSelectorType>(null)
-  // const inputRef = useRef<UrlInputType>(null)
+  const inputRef = useRef<UrlInputType>(null)
   const [visible, setVisible] = useState(false)
   const theme = useTheme()
   const t = useI18n()
+  const userApiList = useUserApiList()
 
   const handleShow = () => {
     dialogRef.current?.setVisible(true)
@@ -115,8 +145,10 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
       ? (
           <Dialog ref={dialogRef} bgHide={false}>
             <View style={styles.content}>
-              {/* <UrlInput ref={inputRef} /> */}
-              <Text size={16} style={styles.title}>{t('user_api_title')}</Text>
+              {
+                userApiList.length ? null : <UrlInput ref={inputRef} />
+              }
+              {/*<Text size={16} style={styles.title}>{t('user_api_title')}</Text>*/}
               <List />
               <View style={styles.tips}>
                 <Text style={styles.tipsText} size={12}>
