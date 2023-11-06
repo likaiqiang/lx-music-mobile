@@ -38,7 +38,7 @@ const EmptyPic = memo(() => {
   )
 })
 
-export default () => {
+export default ({ isHome }: { isHome: boolean }) => {
   const musicInfo = usePlayerMusicInfo()
   const handlePress = () => {
     // console.log('')
@@ -50,6 +50,7 @@ export default () => {
   }
 
   const handleLongPress = () => {
+    if (!isHome) return
     const listId = playerState.playMusicInfo.listId
     if (!listId) return
     if(listId == LIST_IDS.DOWNLOAD){
