@@ -1,27 +1,32 @@
 import {
   View,
-  AppState, InteractionManager
+  AppState,
+  Platform
 } from 'react-native'
 import {createStyle} from "@/utils/tools";
 import List, {ListType} from "./List";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {InitState as CommonState} from "@/store/common/state";
 import RNFetchBlob from "rn-fetch-blob";
 import {getFileExtension, requestStoragePermission} from "@/core/music/utils";
-import {getData, saveData} from "@/plugins/storage";
-import {LIST_IDS, storageDataPrefix} from "@/config/constant";
-import {clearListMusics, overwriteListMusics} from "@/core/list";
+import {LIST_IDS} from "@/config/constant";
 import {getListMusicSync} from "@/utils/listManage";
-import {setList} from "@/core/songlist";
-import state from "@/store/player/state";
-import BackgroundTimer from "react-native-background-timer";
 import {usePlayMusicInfo} from "@/store/player/hook";
+
+import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './ListMenu'
+import {overwriteListMusics} from "@/core/list";
+import ConfirmAlert, {ConfirmAlertType} from "@/components/common/ConfirmAlert";
+import Text from "@/components/common/Text";
+
+const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
 
 const scanMusicFiles = async (): Promise<string[]> =>{
   await requestStoragePermission()
   const musicDir = `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`
   return RNFetchBlob.fs.ls(musicDir).then(files=>{
-    return files.filter(file => file.endsWith('.mp3') || file.endsWith('.wav'));
+    return files.filter(file => {
+      return !!(supportMusic.find(item=> file.toLocaleLowerCase().endsWith(item)))
+    });
   })
 }
 
@@ -78,7 +83,9 @@ function generateEmptyLocalMusicInfo(fullName: string): LX.Music.MusicInfoDownlo
 export default () => {
   const listRef = useRef<ListType>(null)
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
-
+  const listMenuRef = useRef<ListMenuType>(null)
+  const confirmAlertRef = useRef<ConfirmAlertType>(null)
+  const [selectMusicInfo, setSelectMusicInfo] = useState<LX.Music.MusicInfoLocal>()
   const playMusicInfo = usePlayMusicInfo()
   const updateDownloadedList = async ():Promise<void> =>{
     void scanMusicFiles().then(files=>{
@@ -87,6 +94,14 @@ export default () => {
       setList(updatedList)
       overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false)
     })
+  }
+  const showMenu = (musicInfo: LX.Music.MusicInfoLocal, index: number, position: Position) => {
+    listMenuRef.current?.show({
+      musicInfo,
+      index,
+      single: false,
+      selectedList: [],
+    }, position)
   }
   useEffect(() => {
     updateDownloadedList().then()
@@ -98,7 +113,7 @@ export default () => {
     }
 
     const handleDownloadListPositionChange = ()=>{
-      console.log('handleDownloadListPositionChange');
+      global.state_event.navActiveIdUpdated('nav_download')
       listRef.current?.jumpPosition()
     }
 
@@ -115,6 +130,10 @@ export default () => {
       appStateSubscription.remove()
     }
   }, []);
+  const confirmAlertText = useMemo(()=>{
+    if(!selectMusicInfo) return ''
+    return `真的要删除\n${selectMusicInfo!.name}.${selectMusicInfo!.meta.ext}\n吗？`
+  },[selectMusicInfo])
   return (
     <View style={styles.container}>
       <List
@@ -129,7 +148,28 @@ export default () => {
         onPress={(item)=>{
 
         }}
+        onShowMenu={showMenu}
       />
+      <ListMenu
+          ref={listMenuRef}
+          onRemove={(info)=>{
+            setSelectMusicInfo(info.musicInfo as LX.Music.MusicInfoLocal)
+            confirmAlertRef.current?.setVisible(true)
+          }}
+      />
+      <ConfirmAlert
+          onConfirm={()=>{
+            RNFetchBlob.fs.unlink(selectMusicInfo!.meta.filePath).then(updateDownloadedList).then(()=>{
+              confirmAlertRef.current!.setVisible(false)
+            })
+          }}
+          text={confirmAlertText}
+          ref={confirmAlertRef}
+      >
+        <Text style={{textAlign:'center'}}>
+          {confirmAlertText}
+        </Text>
+      </ConfirmAlert>
     </View>
   )
 }

@@ -32,6 +32,7 @@ export interface ListProps {
   checkHomePagerIdle: boolean
   rowType?: RowInfoType
   onPress?: (item: LX.Music.MusicInfoDownloaded)=>void
+  onShowMenu: (musicInfo: LX.Music.MusicInfoLocal, index: number, position: Position) => void
 }
 export interface ListType {
   // setList: (list: LX.Music.MusicInfoDownloaded[], isAppend: boolean, showSource: boolean) => void
@@ -46,6 +47,7 @@ const List = forwardRef<ListType, ListProps>(({
                                                 list,
                                                 onRefresh,
                                                 onLoadMore,
+                                                onShowMenu,
                                                 progressViewOffset,
                                                 checkHomePagerIdle,
                                                 rowType,
@@ -92,6 +94,7 @@ const List = forwardRef<ListType, ListProps>(({
             item={item}
             index={index}
             showSource={showSource}
+            onShowMenu={onShowMenu}
             onPress={handlePress}
             rowInfo={rowInfo.current}
             isShowAlbumName={isShowAlbumName}
