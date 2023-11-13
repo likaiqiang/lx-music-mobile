@@ -16,9 +16,12 @@ export const setUserApiList = (list: LX.UserApi.UserApiInfo[]) => {
 }
 
 export const addUserApi = (info: LX.UserApi.UserApiInfo) => {
-  state.list.push(info)
+  const isRepeat = !!(state.list.find(item=> item.name === info.name))
+  if(!isRepeat){
+    state.list.push(info)
 
-  event.list_changed([...state.list])
+    event.list_changed([...state.list])
+  }
 }
 
 

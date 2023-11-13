@@ -1,4 +1,4 @@
-import {useRef, useImperativeHandle, forwardRef, useState, useCallback} from 'react'
+import {useRef, useImperativeHandle, forwardRef, useState, useCallback, useEffect} from 'react'
 import Text from '@/components/common/Text'
 import {View, TouchableOpacity, LayoutChangeEvent} from 'react-native'
 import {createStyle, openUrl, tipDialog, toast} from '@/utils/tools'
@@ -10,25 +10,6 @@ import List from './List'
 import ScriptImportExport, { type ScriptImportExportType } from './ScriptImportExport'
 import {state, useUserApiList} from '@/store/userApi'
 import Input, {InputType} from "@/components/common/Input";
-import RNFetchBlob from "rn-fetch-blob";
-import {importUserApi} from "@/core/userApi";
-
-
-async function downloadAndReadFile(url:string) {
-  try {
-    const filenameMatch = url.match(/[^/]+$/)
-    const filename = filenameMatch ? filenameMatch[0] : `source_${Date.now()}.js`
-    // 定義一個本地路徑保存文件
-    const fetchBlob = RNFetchBlob.config({
-      path: RNFetchBlob.fs.dirs.DownloadDir + '/lx.music.source/' + filename
-    });
-    const path = (await fetchBlob.fetch('GET', url)).path()
-    return await RNFetchBlob.fs.readFile(path, 'utf8');
-
-  } catch (error) {
-    return Promise.reject(error)
-  }
-}
 
 interface UrlInputType {
   setText: (text: string) => void
@@ -51,7 +32,7 @@ const UrlInput = forwardRef<UrlInputType, {}>((props, ref) => {
     },
     focus() {
       inputRef.current?.focus()
-    },
+    }
   }))
 
   return (
@@ -60,7 +41,7 @@ const UrlInput = forwardRef<UrlInputType, {}>((props, ref) => {
         ref={inputRef}
         value={text}
         onChangeText={setText}
-        textAlignVertical="top"
+        textAlignVertical="center"
         placeholder={'请输入source url'}
         size={12}
         style={{backgroundColor: theme['c-primary-input-background'] }}
@@ -70,13 +51,13 @@ const UrlInput = forwardRef<UrlInputType, {}>((props, ref) => {
         multiline
         returnKeyType={'done'}
         blurOnSubmit={true}
-        onSubmitEditing={ async ()=>{
-          if(text.trim().length && /^https?:\/\//.test(text.trim())){
-            toast('正在加载请稍后...')
-            const script = await downloadAndReadFile(text)
-            await importUserApi(script)
-          }
-        }}
+        // onSubmitEditing={ async ()=>{
+        //   if(text.trim().length && /^https?:\/\//.test(text.trim())){
+        //     toast('正在加载请稍后...')
+        //     const script = await downloadAndReadFile(text)
+        //     await importUserApi(script)
+        //   }
+        // }}
       />
     </View>
   )
@@ -120,7 +101,7 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
           handleShow()
         })
       }
-    },
+    }
   }))
 
   const handleCancel = () => {
@@ -146,9 +127,9 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
           <Dialog ref={dialogRef} bgHide={false}>
             <View style={styles.content}>
               {
-                userApiList.length ? null : <UrlInput ref={inputRef} />
+                // userApiList.length ? null : <UrlInput ref={inputRef} />
               }
-              {/*<Text size={16} style={styles.title}>{t('user_api_title')}</Text>*/}
+              <Text size={16} style={styles.title}>{t('user_api_title')}</Text>
               <List />
               <View style={styles.tips}>
                 <Text style={styles.tipsText} size={12}>

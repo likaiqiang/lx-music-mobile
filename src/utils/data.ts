@@ -1,6 +1,14 @@
-import { getData, saveData, getAllKeys, removeDataMultiple, saveDataMultiple, removeData, getDataMultiple } from '@/plugins/storage'
-import { DEFAULT_SETTING, LIST_IDS, storageDataPrefix, type NAV_ID_Type } from '@/config/constant'
-import { throttle } from './common'
+import {
+  getAllKeys,
+  getData,
+  getDataMultiple,
+  removeData,
+  removeDataMultiple,
+  saveData,
+  saveDataMultiple
+} from '@/plugins/storage'
+import {DEFAULT_SETTING, LIST_IDS, type NAV_ID_Type, storageDataPrefix} from '@/config/constant'
+import {throttle} from './common'
 // import { gzip, ungzip } from '@/utils/nativeModules/gzip'
 // import { readFile, writeFile, temporaryDirectoryPath, unlink } from '@/utils/fs'
 // import { isNotificationsEnabled, openNotificationPermissionActivity, shareText } from '@/utils/nativeModules/utils'
@@ -470,7 +478,8 @@ export const getUserApiScript = async(id: string): Promise<string> => {
   const script = await getData<string>(`${userApiPrefix}${id}`) ?? ''
   return script
 }
-export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
+
+export const parseUserScript = async(script: string): Promise<LX.UserApi.UserApiInfo> =>{
   let scriptInfo = script.split(/\r?\n/)
   let name = scriptInfo[1] || ''
   let description = scriptInfo[2] || ''
@@ -478,18 +487,24 @@ export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo>
   if (name.length > 24) name = name.substring(0, 24) + '...'
   description = description.startsWith(' * @description ') ? description.replace(' * @description ', '').trim() : ''
   if (description.length > 36) description = description.substring(0, 36) + '...'
-  const apiInfo = {
+  return {
     id: `user_api_${Math.random().toString().substring(2, 5)}_${Date.now()}`,
     name,
     description,
     // script,
     allowShowUpdateAlert: true,
   }
-  userApis.push(apiInfo)
-  await saveDataMultiple([
-    [userApiPrefix, userApis],
-    [`${userApiPrefix}${apiInfo.id}`, script],
-  ])
+}
+export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
+  const apiInfo = await parseUserScript(script)
+  const isRepeat = !!(userApis.find(item=> item.name === apiInfo.name))
+  if(!isRepeat){
+    userApis.push(apiInfo)
+    await saveDataMultiple([
+      [userApiPrefix, userApis],
+      [`${userApiPrefix}${apiInfo.id}`, script],
+    ])
+  }
   return apiInfo
 }
 export const removeUserApi = async(ids: string[]) => {
