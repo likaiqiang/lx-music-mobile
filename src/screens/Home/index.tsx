@@ -5,9 +5,8 @@ import { setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
 import Vertical from './Vertical'
 import Horizontal from './Horizontal'
-import {parseUserScript} from "@/utils/data";
 import {importUserApi} from "@/core/userApi";
-import {setApiSource} from "@/core/apiSource";
+
 
 interface Props {
   componentId: string
@@ -25,7 +24,6 @@ export default ({ componentId }: Props) => {
     }).then(res=>res.text()).then(async script=>{
       return importUserApi(script)
     })
-
   }, [])
 
   return (

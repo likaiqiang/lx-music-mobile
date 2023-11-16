@@ -6,6 +6,7 @@ import type { StateEventTypes } from '@/event/stateEvent'
 import type { I18n } from '@/lang/i18n'
 import type { Buffer as _Buffer } from 'buffer'
 import type { SettingScreenIds } from '@/screens/Home/Views/Setting'
+import {CachedEvent} from "@/event/cachedEvent";
 
 // interface Process {
 //   env: {
@@ -64,6 +65,7 @@ declare global {
   var lx: GlobalData
   var i18n: I18n
   var app_event: AppEventTypes
+  var cache_event: CachedEvent
   var list_event: ListEventTypes
   var dislike_event: DislikeEventTypes
   var state_event: StateEventTypes

@@ -38,7 +38,8 @@ export interface ListType {
   // setList: (list: LX.Music.MusicInfoDownloaded[], isAppend: boolean, showSource: boolean) => void
   // getList: () => LX.Music.MusicInfoDownloaded[]
   // setStatus: (val: Status) => void
-  jumpPosition: ()=> void
+  jumpPosition: ()=> void,
+  playFilePath: (path: string)=>void
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
@@ -83,6 +84,12 @@ const List = forwardRef<ListType, ListProps>(({
       jumpPosition(){
         if(activeIndex > -1){
           flatListRef.current?.scrollToIndex({ index: activeIndex, viewPosition: 0.3, animated: true })
+        }
+      },
+      playFilePath(path:string){
+        const index = list.findIndex(item=> item.meta.filePath === path)
+        if(index > -1){
+          handlelocalPlay(list[index])
         }
       }
     }

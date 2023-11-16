@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import {createStyle} from "@/utils/tools";
 import List, {ListType} from "./List";
-import {useEffect, useMemo, useRef, useState} from "react";
+import React, {useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {InitState as CommonState} from "@/store/common/state";
 import RNFetchBlob from "rn-fetch-blob";
 import {getFileExtension, requestStoragePermission} from "@/core/music/utils";
@@ -17,12 +17,14 @@ import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './L
 import {overwriteListMusics} from "@/core/list";
 import ConfirmAlert, {ConfirmAlertType} from "@/components/common/ConfirmAlert";
 import Text from "@/components/common/Text";
+import BackgroundTimer from "react-native-background-timer";
 
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
 
-const scanMusicFiles = async (): Promise<string[]> =>{
+
+const scanMusicFiles = async (dir?:string): Promise<string[]> =>{
   await requestStoragePermission()
-  const musicDir = `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`
+  const musicDir = dir ?? `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`
   return RNFetchBlob.fs.ls(musicDir).then(files=>{
     return files.filter(file => {
       return !!(supportMusic.find(item=> file.toLocaleLowerCase().endsWith(item)))
@@ -80,20 +82,48 @@ function generateEmptyLocalMusicInfo(fullName: string): LX.Music.MusicInfoDownlo
   }
 }
 
-export default () => {
+export interface DownloadTypes {
+  playFilePath: (path:string)=>void
+}
+interface DownloadProps{
+  path: string,
+  playFilePathDown?: ()=>void
+}
+
+export default React.forwardRef<DownloadTypes,DownloadProps>(({path,playFilePathDown},ref) => {
   const listRef = useRef<ListType>(null)
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
   const listMenuRef = useRef<ListMenuType>(null)
   const confirmAlertRef = useRef<ConfirmAlertType>(null)
   const [selectMusicInfo, setSelectMusicInfo] = useState<LX.Music.MusicInfoLocal>()
   const playMusicInfo = usePlayMusicInfo()
+  const timerRef = useRef<number>()
+  const pathRef = useRef<string>(path)
+  pathRef.current = path
+
+  console.log('download render',path)
+
   const updateDownloadedList = async ():Promise<void> =>{
-    void scanMusicFiles().then(files=>{
-      console.log('scanMusicFiles', files);
-      const updatedList = getConcatMusicInfos(files)
-      setList(updatedList)
-      overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false)
-    })
+    if(timerRef.current) BackgroundTimer.clearTimeout(timerRef.current)
+    console.log('updateDownloadedList',pathRef.current);
+    const dir = pathRef.current ? pathRef.current.substring(0, pathRef.current.lastIndexOf('/')) : undefined;
+    timerRef.current = BackgroundTimer.setTimeout(()=>{
+      scanMusicFiles(dir).then(files=>{
+        console.log('scanMusicFiles', files);
+        const updatedList = getConcatMusicInfos(files)
+        setList(updatedList)
+        overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false)
+        if(pathRef.current){
+          requestAnimationFrame(()=>{
+            listRef.current!.playFilePath(pathRef.current)
+            playFilePathDown?.()
+          })
+          // BackgroundTimer.setTimeout(()=>{
+          //
+          // },300)
+        }
+      })
+    },300)
   }
   const showMenu = (musicInfo: LX.Music.MusicInfoLocal, index: number, position: Position) => {
     listMenuRef.current?.show({
@@ -103,6 +133,11 @@ export default () => {
       selectedList: [],
     }, position)
   }
+  useImperativeHandle(ref,()=>{
+    return {
+      playFilePath: listRef.current!.playFilePath
+    }
+  })
   useEffect(() => {
     updateDownloadedList().then()
 
@@ -116,6 +151,7 @@ export default () => {
       global.state_event.navActiveIdUpdated('nav_download')
       listRef.current?.jumpPosition()
     }
+
 
     global.state_event.on('navActiveIdUpdated', handleNavIdUpdate)
     global.app_event.on('jumpDownloadListPosition',handleDownloadListPositionChange)
@@ -159,7 +195,9 @@ export default () => {
       />
       <ConfirmAlert
           onConfirm={()=>{
-            RNFetchBlob.fs.unlink(selectMusicInfo!.meta.filePath).then(updateDownloadedList).then(()=>{
+            RNFetchBlob.fs.unlink(selectMusicInfo!.meta.filePath).then(()=>{
+              return updateDownloadedList()
+            }).then(()=>{
               confirmAlertRef.current!.setVisible(false)
             })
           }}
@@ -172,7 +210,7 @@ export default () => {
       </ConfirmAlert>
     </View>
   )
-}
+})
 
 const styles = createStyle({
   container: {
