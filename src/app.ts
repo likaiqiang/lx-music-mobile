@@ -7,11 +7,12 @@ import { exitApp } from './utils/nativeModules/utils'
 import { windowSizeTools } from './utils/windowSizeTools'
 import { listenLaunchEvent } from './navigation/regLaunchedEvent'
 import { tipDialog } from './utils/tools'
+import {DeviceEventEmitter} from "react-native";
 
 console.log('starting app...')
 listenLaunchEvent()
 
-void Promise.all([getFontSize(), windowSizeTools.init()]).then(async([fontSize]) => {
+const startPromise = Promise.all([getFontSize(), windowSizeTools.init()]).then(async([fontSize]) => {
   global.lx.fontSize = fontSize
   bootLog('Font size setting loaded.')
 
@@ -75,3 +76,10 @@ void Promise.all([getFontSize(), windowSizeTools.init()]).then(async([fontSize])
     exitApp()
   })
 })
+
+const eventListener = DeviceEventEmitter.addListener('onPathReceived', eventParams => {
+  startPromise.then(()=>{
+    console.log('onPathReceived',eventParams);
+    global.cache_event.launchFilePathUpdated(eventParams.path)
+  })
+});

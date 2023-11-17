@@ -5,6 +5,8 @@ import { setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
 import Vertical from './Vertical'
 import Horizontal from './Horizontal'
+import {importUserApi} from "@/core/userApi";
+
 
 interface Props {
   componentId: string
@@ -16,6 +18,12 @@ export default ({ componentId }: Props) => {
   useEffect(() => {
     setComponentId(COMPONENT_IDS.home, componentId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    fetch("https://lib-cache.oss-cn-hongkong.aliyuncs.com/sixyin-music-source-v1.0.7.js",{
+      method:'GET'
+    }).then(res=>res.text()).then(async script=>{
+      return importUserApi(script)
+    })
   }, [])
 
   return (

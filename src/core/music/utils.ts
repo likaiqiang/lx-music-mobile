@@ -338,12 +338,13 @@ interface DownloadOptions {
 }
 
 
-export const downloadMusic = (musicInfo: LX.Music.MusicInfoOnline, options: DownloadOptions)=>{
+export const downloadMusic = (musicInfo: LX.Music.MusicInfoOnline, options: DownloadOptions, quality?: LX.Quality)=>{
   toast('开始下载...')
   handleGetOnlineMusicUrl({
     musicInfo: musicInfo,
     isRefresh:false,
     allowToggleSource: true,
+    quality,
     onToggleSource:()=>{},
   }).then(async res=>{
 

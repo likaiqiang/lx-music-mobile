@@ -34,19 +34,29 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfoBase) => {
   return info
 }
 
-export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInterval, isActive }: {
+export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInterval, isActive, onShowMenu }: {
   item: LX.Music.MusicInfoDownloaded
   index: number
   showSource?: boolean
-  onPress: (item: LX.Music.MusicInfoDownloaded, index: number) => void
+  onPress: (item: LX.Music.MusicInfoLocal, index: number) => void
+  onShowMenu: (item: LX.Music.MusicInfoLocal, index: number, position: { x: number, y: number, w: number, h: number }) => void
   rowInfo: RowInfo
   isShowAlbumName: boolean
   isShowInterval: boolean,
   isActive: boolean
 }) => {
   const theme = useTheme()
+  const moreButtonRef = useRef<TouchableOpacity>(null)
 
-  const tagInfo = useQualityTag(item)
+  const handleShowMenu = () => {
+    if (moreButtonRef.current?.measure) {
+      moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
+        // console.log(fx, fy, width, height, px, py)
+        onShowMenu(item, index, { x: Math.ceil(px), y: Math.ceil(py), w: Math.ceil(width), h: Math.ceil(height) })
+      })
+    }
+  }
+
   const isSupported = useAssertApiSupport(item.source)
 
   const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
@@ -61,7 +71,7 @@ export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInt
         }
         <View style={styles.itemInfo}>
           {/* <View style={styles.listItemTitle}> */}
-          <Text color={isActive ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>{item.name}</Text>
+          <Text color={isActive ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>{item.name + '.' +item.meta.ext}</Text>
           {/* </View> */}
           <View style={styles.listItemSingle}>
             <Badge>{item.source.toUpperCase()}</Badge>
@@ -75,6 +85,9 @@ export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInt
             <Text size={12} color={isActive ? theme['c-primary-alpha-400'] : theme['c-250']} numberOfLines={1}>{item.interval}</Text>
           ) : null
         }
+      </TouchableOpacity>
+      <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
+        <Icon name="dots-vertical" style={{ color: theme['c-350'] }} size={12} />
       </TouchableOpacity>
     </View>
   )

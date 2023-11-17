@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { InteractionManager, View } from 'react-native'
+import {DeviceEventEmitter, EmitterSubscription, InteractionManager, View} from 'react-native'
 import Search from '../Views/Search'
 import SongList from '../Views/SongList'
 import Mylist from '../Views/Mylist'
@@ -9,7 +9,8 @@ import commonState, { type InitState as CommonState } from '@/store/common/state
 import { createStyle } from '@/utils/tools'
 import PagerView, { type PageScrollStateChangedNativeEvent, type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
 import { setNavActiveId } from '@/core/common'
-import Download from "@/screens/Home/Views/Download";
+import Download, {DownloadTypes} from "@/screens/Home/Views/Download";
+import BackgroundTimer from "react-native-background-timer";
 
 const hideKeys = [
   'list.isShowAlbumName',
@@ -172,9 +173,15 @@ const SettingPage = () => {
 
 const DownloadPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_download')
-  const component = useMemo(() => <Download />, [])
+  const [path, setPath] = useState('')
+  const component = useMemo(() => {
+    return <Download path={path} playFilePathDown={()=>{
+      setPath('')
+    }} />
+  }, [path])
+
   useEffect(() => {
-    const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
+    const handleNavIdUpdate = (id: CommonState['navActiveId'], params?:{path:string}) => {
       if (id == 'nav_download') {
         requestAnimationFrame(() => {
           void InteractionManager.runAfterInteractions(() => {
@@ -183,10 +190,25 @@ const DownloadPage = () => {
         })
       }
     }
+    const handleLaunchFilePathUpdated = (path:string)=>{
+      console.log('handleLaunchFilePathUpdated',path);
+      requestAnimationFrame(() => {
+        void InteractionManager.runAfterInteractions(() => {
+          setPath(path)
+          requestAnimationFrame(()=>{
+            console.log('start 000');
+            global.state_event.navActiveIdUpdated('nav_download')
+            // setPath('')
+          })
+        })
+      })
+    }
     global.state_event.on('navActiveIdUpdated', handleNavIdUpdate)
+    global.cache_event.on('launchFilePathUpdated',handleLaunchFilePathUpdated)
 
     return () => {
       global.state_event.off('navActiveIdUpdated', handleNavIdUpdate)
+      global.cache_event.off('launchFilePathUpdated',handleLaunchFilePathUpdated)
     }
   }, [])
   return visible ? component : null

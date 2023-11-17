@@ -1,4 +1,4 @@
-import { useRef, forwardRef, useImperativeHandle } from 'react'
+import {useRef, forwardRef, useImperativeHandle} from 'react'
 import { View } from 'react-native'
 // import LoadingMask, { LoadingMaskType } from '@/components/common/LoadingMask'
 import List, { type ListProps, type ListType, type Status, type RowInfoType } from './List'
@@ -8,8 +8,7 @@ import ListMusicAdd, { type MusicAddModalType as ListMusicAddType } from '@/comp
 import MultipleModeBar, { type MultipleModeBarType, type SelectMode } from './MultipleModeBar'
 import { handleDislikeMusic, handlePlay, handlePlayLater, handleShare } from './listAction'
 import { createStyle } from '@/utils/tools'
-import {downloadMusic} from "@/core/music/utils";
-import {useSettingValue} from "@/store/setting/hook";
+import DownloadModal, {DownloadModalType} from "@/components/common/DownloadModal";
 
 export interface OnlineListProps {
   onRefresh: ListProps['onRefresh']
@@ -39,9 +38,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
   const listMusicAddRef = useRef<ListMusicAddType>(null)
   const listMusicMultiAddRef = useRef<ListAddMultiType>(null)
   const listMenuRef = useRef<ListMenuType>(null)
-  const isDownloadLrc = useSettingValue('download.isDownloadLrc')
-  const isEnableDownload = useSettingValue('download.enable')
-  const isSkipFile = useSettingValue('download.skipIfFileExists')
+  const downloadModalRef = useRef<DownloadModalType>(null)
   // const loadingMaskRef = useRef<LoadingMaskType>(null)
 
   useImperativeHandle(ref, () => ({
@@ -115,11 +112,12 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
         onCopyName={info => { handleShare(info.musicInfo) }}
         onAdd={handleAddMusic}
         onDownload={(info)=>{
-          downloadMusic(info.musicInfo,{isDownloadLrc,isEnableDownload,isSkipFile})
+          downloadModalRef.current?.show(info.musicInfo)
         }}
         onDislikeMusic={info => { void handleDislikeMusic(info.musicInfo) }}
       />
       {/* <LoadingMask ref={loadingMaskRef} /> */}
+      <DownloadModal ref={downloadModalRef}/>
     </View>
   )
 })

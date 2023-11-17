@@ -32,12 +32,14 @@ export interface ListProps {
   checkHomePagerIdle: boolean
   rowType?: RowInfoType
   onPress?: (item: LX.Music.MusicInfoDownloaded)=>void
+  onShowMenu: (musicInfo: LX.Music.MusicInfoLocal, index: number, position: Position) => void
 }
 export interface ListType {
   // setList: (list: LX.Music.MusicInfoDownloaded[], isAppend: boolean, showSource: boolean) => void
   // getList: () => LX.Music.MusicInfoDownloaded[]
   // setStatus: (val: Status) => void
-  jumpPosition: ()=> void
+  jumpPosition: ()=> void,
+  playFilePath: (path: string)=>void
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
@@ -46,6 +48,7 @@ const List = forwardRef<ListType, ListProps>(({
                                                 list,
                                                 onRefresh,
                                                 onLoadMore,
+                                                onShowMenu,
                                                 progressViewOffset,
                                                 checkHomePagerIdle,
                                                 rowType,
@@ -82,6 +85,12 @@ const List = forwardRef<ListType, ListProps>(({
         if(activeIndex > -1){
           flatListRef.current?.scrollToIndex({ index: activeIndex, viewPosition: 0.3, animated: true })
         }
+      },
+      playFilePath(path:string){
+        const index = list.findIndex(item=> item.meta.filePath === path)
+        if(index > -1){
+          handlelocalPlay(list[index])
+        }
       }
     }
   })
@@ -92,6 +101,7 @@ const List = forwardRef<ListType, ListProps>(({
             item={item}
             index={index}
             showSource={showSource}
+            onShowMenu={onShowMenu}
             onPress={handlePress}
             rowInfo={rowInfo.current}
             isShowAlbumName={isShowAlbumName}
