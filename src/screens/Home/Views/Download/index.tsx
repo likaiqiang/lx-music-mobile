@@ -22,10 +22,9 @@ import BackgroundTimer from "react-native-background-timer";
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
 
 
-const scanMusicFiles = async (dir?:string): Promise<string[]> =>{
+const scanMusicFiles = async (musicDir?:string): Promise<string[]> =>{
   await requestStoragePermission()
-  const musicDir = dir ?? `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`
-  return RNFetchBlob.fs.ls(musicDir).then(files=>{
+  return RNFetchBlob.fs.ls(musicDir as string).then(files=>{
     return files.filter(file => {
       return !!(supportMusic.find(item=> file.toLocaleLowerCase().endsWith(item)))
     });
@@ -45,28 +44,11 @@ function generateRandomId() {
   return 'id-' + Math.random().toString(36).slice(2, 9) + Date.now();
 }
 
-function getConcatMusicInfos(fileNames: string[]): LX.Music.MusicInfoDownloaded[] {
-  const downloadList = (getListMusicSync(LIST_IDS.DOWNLOAD) || []) as LX.Music.MusicInfoDownloaded[]
-  if(fileNames.length >= downloadList.length){
-    return downloadList.concat(fileNames.filter(fileName => {
-      const path = `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music/${fileName}`
-      return !downloadList.some(item => item.meta.filePath === path)
-    }).map(generateEmptyLocalMusicInfo))
-  }
-  else {
-    const paths = fileNames.map(fileName=> `${RNFetchBlob.fs.dirs.DownloadDir}/lx.music/${fileName}`)
-    return downloadList.filter(musicInfo=>{
-      return paths.includes(musicInfo.meta.filePath)
-    })
-  }
-}
-
-
-function generateEmptyLocalMusicInfo(fullName: string): LX.Music.MusicInfoDownloaded{
-  const id = generateRandomId()
-  const dirs = RNFetchBlob.fs.dirs;
+function generateEmptyLocalMusicInfo(fullName: string, dir: string): LX.Music.MusicInfoDownloaded{
+  const filePath = `${dir}/${fullName}`
+  const id = `local__${filePath}`
   return {
-    "id": `local__${id}`,
+    "id": id,
     "name": getFileNameWithoutExtension(fullName),
     "singer":'',
     "source":'local',
@@ -77,7 +59,7 @@ function generateEmptyLocalMusicInfo(fullName: string): LX.Music.MusicInfoDownlo
       "picUrl":"",
       "fileName": getFileNameWithoutExtension(fullName),
       "ext": getFileExtension(fullName),
-      'filePath': `${dirs.DownloadDir}/lx.music/${fullName}`
+      'filePath': filePath
     }
   }
 }
@@ -86,11 +68,10 @@ export interface DownloadTypes {
   playFilePath: (path:string)=>void
 }
 interface DownloadProps{
-  path: string,
-  playFilePathDown?: ()=>void
+  path: string
 }
 
-export default React.forwardRef<DownloadTypes,DownloadProps>(({path,playFilePathDown},ref) => {
+export default React.forwardRef<DownloadTypes,DownloadProps>(({path},ref) => {
   const listRef = useRef<ListType>(null)
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
   const listMenuRef = useRef<ListMenuType>(null)
@@ -100,23 +81,25 @@ export default React.forwardRef<DownloadTypes,DownloadProps>(({path,playFilePath
   const timerRef = useRef<number>()
   const pathRef = useRef<string>(path)
   pathRef.current = path
+  const dirRef = useRef(`${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`)
 
   console.log('download render',path)
 
   const updateDownloadedList = async ():Promise<void> =>{
     if(timerRef.current) BackgroundTimer.clearTimeout(timerRef.current)
     console.log('updateDownloadedList',pathRef.current);
-    const dir = pathRef.current ? pathRef.current.substring(0, pathRef.current.lastIndexOf('/')) : undefined;
+    if(pathRef.current){
+      dirRef.current = pathRef.current.substring(0, pathRef.current.lastIndexOf('/'))
+    }
     timerRef.current = BackgroundTimer.setTimeout(()=>{
-      scanMusicFiles(dir).then(files=>{
-        console.log('scanMusicFiles', files);
-        const updatedList = getConcatMusicInfos(files)
+      scanMusicFiles(dirRef.current).then(files=>{
+        const updatedList = files.map((file=> generateEmptyLocalMusicInfo(file, dirRef.current)))
+        console.log('scanMusicFiles', updatedList);
         setList(updatedList)
         overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false)
         if(pathRef.current){
           requestAnimationFrame(()=>{
             listRef.current!.playFilePath(pathRef.current)
-            playFilePathDown?.()
           })
           // BackgroundTimer.setTimeout(()=>{
           //

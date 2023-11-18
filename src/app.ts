@@ -80,6 +80,8 @@ const startPromise = Promise.all([getFontSize(), windowSizeTools.init()]).then(a
 const eventListener = DeviceEventEmitter.addListener('onPathReceived', eventParams => {
   startPromise.then(()=>{
     console.log('onPathReceived',eventParams);
-    global.cache_event.launchFilePathUpdated(eventParams.path)
+    if(eventParams.path){
+      global.cache_event.launchFilePathUpdated(eventParams.path)
+    }
   })
 });

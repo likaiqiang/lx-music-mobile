@@ -175,9 +175,7 @@ const DownloadPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_download')
   const [path, setPath] = useState('')
   const component = useMemo(() => {
-    return <Download path={path} playFilePathDown={()=>{
-      setPath('')
-    }} />
+    return <Download path={path} />
   }, [path])
 
   useEffect(() => {
