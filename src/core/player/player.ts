@@ -24,7 +24,7 @@ import { requestMsg } from '@/utils/message'
 import { getRandom } from '@/utils/common'
 import { filterList } from './utils'
 import BackgroundTimer from 'react-native-background-timer'
-import { checkNotificationPermission, checkIgnoringBatteryOptimization } from '@/utils/tools'
+import { checkIgnoringBatteryOptimization, checkNotificationPermission, debounceBackgroundTimer } from '@/utils/tools'
 import {LIST_IDS} from "@/config/constant";
 import {requestStoragePermission} from "@/core/music/utils";
 import RNFetchBlob from "rn-fetch-blob";
@@ -274,6 +274,19 @@ const handleLocalPlay = async ()=>{
 }
 
 
+const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) => {
+    const playMusicInfo = playerState.playMusicInfo
+    setMusicUrl(musicInfo as LX.Music.MusicInfo) // 核心
+
+    void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
+        if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+        setMusicInfo({ pic: url })
+        global.app_event.picUpdated()
+    })
+
+    handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
+}, 200)
+
 // 处理音乐播放
 // TODO
 const handlePlay = async() => {
@@ -311,15 +324,7 @@ const handlePlay = async() => {
 
   if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
 
-  setMusicUrl(musicInfo as LX.Music.MusicInfo) // 核心
-
-  void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setMusicInfo({ pic: url })
-    global.app_event.picUpdated()
-  })
-
-  handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
+  debouncePlay(musicInfo)
 }
 
 /**
