@@ -174,12 +174,13 @@ const SettingPage = () => {
 const DownloadPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_download')
   const [path, setPath] = useState('')
+  const downloadRef = useRef<DownloadTypes>(null)
   const component = useMemo(() => {
-    return <Download path={path} />
-  }, [path])
+    return <Download ref={downloadRef} />
+  },[])
 
   useEffect(() => {
-    const handleNavIdUpdate = (id: CommonState['navActiveId'], params?:{path:string}) => {
+    const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
       if (id == 'nav_download') {
         requestAnimationFrame(() => {
           void InteractionManager.runAfterInteractions(() => {
@@ -192,11 +193,10 @@ const DownloadPage = () => {
       console.log('handleLaunchFilePathUpdated',path);
       requestAnimationFrame(() => {
         void InteractionManager.runAfterInteractions(() => {
-          setPath(path)
+          downloadRef.current?.setFilePath(path)
           requestAnimationFrame(()=>{
             console.log('start 000');
             global.state_event.navActiveIdUpdated('nav_download')
-            // setPath('')
           })
         })
       })

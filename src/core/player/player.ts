@@ -123,7 +123,6 @@ const getMusicPlayUrl = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListIt
 
 
 export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem | LX.Music.MusicInfoDownloaded, isRefresh?: boolean) => {
-  console.log('setMusicUrl');
   // addLoadTimeout()
   if (!diffCurrentMusicInfo(musicInfo)) return
   if (cancelDelayRetry) cancelDelayRetry()

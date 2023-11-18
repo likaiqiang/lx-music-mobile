@@ -65,13 +65,11 @@ function generateEmptyLocalMusicInfo(fullName: string, dir: string): LX.Music.Mu
 }
 
 export interface DownloadTypes {
-  playFilePath: (path:string)=>void
-}
-interface DownloadProps{
-  path: string
+  setFilePath: (path: string)=>void
 }
 
-export default React.forwardRef<DownloadTypes,DownloadProps>(({path},ref) => {
+
+export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
   const listRef = useRef<ListType>(null)
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
   const listMenuRef = useRef<ListMenuType>(null)
@@ -79,35 +77,38 @@ export default React.forwardRef<DownloadTypes,DownloadProps>(({path},ref) => {
   const [selectMusicInfo, setSelectMusicInfo] = useState<LX.Music.MusicInfoLocal>()
   const playMusicInfo = usePlayMusicInfo()
   const timerRef = useRef<number>()
+  const [path, setPath] = useState('')
   const pathRef = useRef<string>(path)
   pathRef.current = path
   const dirRef = useRef(`${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`)
 
-  console.log('download render',path)
-
   const updateDownloadedList = async ():Promise<void> =>{
     if(timerRef.current) BackgroundTimer.clearTimeout(timerRef.current)
-    console.log('updateDownloadedList',pathRef.current);
     if(pathRef.current){
       dirRef.current = pathRef.current.substring(0, pathRef.current.lastIndexOf('/'))
     }
     timerRef.current = BackgroundTimer.setTimeout(()=>{
       scanMusicFiles(dirRef.current).then(files=>{
         const updatedList = files.map((file=> generateEmptyLocalMusicInfo(file, dirRef.current)))
-        console.log('scanMusicFiles', updatedList);
         setList(updatedList)
         overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false)
         if(pathRef.current){
           requestAnimationFrame(()=>{
             listRef.current!.playFilePath(pathRef.current)
+            setPath('')
           })
-          // BackgroundTimer.setTimeout(()=>{
-          //
-          // },300)
         }
       })
     },300)
   }
+
+  useImperativeHandle(ref,()=>{
+    return {
+      setFilePath(path:string){
+        setPath(path)
+      }
+    }
+  })
   const showMenu = (musicInfo: LX.Music.MusicInfoLocal, index: number, position: Position) => {
     listMenuRef.current?.show({
       musicInfo,
@@ -116,11 +117,6 @@ export default React.forwardRef<DownloadTypes,DownloadProps>(({path},ref) => {
       selectedList: [],
     }, position)
   }
-  useImperativeHandle(ref,()=>{
-    return {
-      playFilePath: listRef.current!.playFilePath
-    }
-  })
   useEffect(() => {
     updateDownloadedList().then()
 
