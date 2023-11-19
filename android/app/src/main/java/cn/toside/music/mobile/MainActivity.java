@@ -7,7 +7,10 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.reactnativenavigation.NavigationActivity;
+
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -19,11 +22,32 @@ import androidx.loader.content.CursorLoader;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
+import com.rnfs.UploadResult;
 
 
 class MusicPlayer{
+  private ReactContext reactContext = null;
+  private MainActivity MainActivityContext = null;
+  MusicPlayer(MainActivity context){
+    MainActivityContext = context;
+    Intent intent = context.getIntent();
+    final ReactInstanceManager reactInstanceManager = ((MainApplication) context.getApplication()).getReactNativeHost().getReactInstanceManager();
+    reactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
+      @Override
+      public void onReactContextInitialized(ReactContext context) {
+        reactContext = context;
+        sendUrl(intent);
+      }
+    });
+
+    if (reactInstanceManager.hasStartedCreatingInitialContext()) {
+      reactContext = reactInstanceManager.getCurrentReactContext();
+      // ReactContext已经创建完成，可以直接获取
+      sendUrl(intent);
+    }
+  }
   public void sendUrl(Intent intent){
-    if (intent!= null && intent.getAction().equals(Intent.ACTION_VIEW)) {
+    if (intent!= null && intent.getAction().equals(Intent.ACTION_VIEW) && filterIntent(intent)) {
       // 获取intent的data，这是一个Uri对象
       Uri data = intent.getData();
 
@@ -40,13 +64,24 @@ class MusicPlayer{
         .emit("onPathReceived", event);
     }
   }
-//  private String getRealPathFromURI(Uri contentUri) {
-//    String[] proj = { MediaStore.Audio.Media.DATA };
-//    Cursor cursor = managedQuery(contentUri, proj, null, null, null);
-//    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-//    cursor.moveToFirst();
-//    return cursor.getString(column_index);
-//  }
+  private boolean filterIntent(Intent intent) {
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(Intent.ACTION_VIEW);
+    filter.addCategory(Intent.CATEGORY_DEFAULT);
+    filter.addCategory(Intent.CATEGORY_APP_MUSIC);
+    filter.addDataScheme("content");
+    filter.addDataScheme("file");
+    try{
+      filter.addDataType("audio/*");
+      filter.addDataType("application/ogg");
+      filter.addDataType("application/x-ogg");
+      filter.addDataType("application/itunes");
+    } catch (IntentFilter.MalformedMimeTypeException e){
+      e.printStackTrace();
+    }
+    int result = filter.match(MainActivityContext.getContentResolver(), intent, false, "TAG");
+    return result >= 0;
+  }
   private String getRealPathFromURI(Uri contentUri) {
     String[] proj = { MediaStore.Audio.Media.DATA };
     CursorLoader loader = new CursorLoader(MainActivity.reactContext, contentUri, proj, null, null, null);
@@ -54,6 +89,10 @@ class MusicPlayer{
     int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
     cursor.moveToFirst();
     return cursor.getString(column_index);
+  }
+  public void release() {
+    reactContext = null;
+    MainActivityContext = null;
   }
 }
 
@@ -63,29 +102,16 @@ public class MainActivity extends NavigationActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
-
-      Intent intent = getIntent();
-      musicPlayer = new MusicPlayer();
-
-      final ReactInstanceManager reactInstanceManager = ((MainApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
-      // 添加监听器
-      reactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
-        @Override
-        public void onReactContextInitialized(ReactContext context) {
-          reactContext = context;
-          musicPlayer.sendUrl(intent);
-        }
-      });
-
-      if (reactInstanceManager.hasStartedCreatingInitialContext()) {
-        reactContext = reactInstanceManager.getCurrentReactContext();
-        // ReactContext已经创建完成，可以直接获取
-        musicPlayer.sendUrl(intent);
-      }
+      musicPlayer = new MusicPlayer(this);
     }
     @Override
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         musicPlayer.sendUrl(intent);
+    }
+    @Override
+    protected void onDestroy(){
+      super.onDestroy();
+      musicPlayer.release();
     }
 }
