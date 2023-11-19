@@ -23,7 +23,6 @@ const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac'
 
 
 const scanMusicFiles = async (musicDir?:string): Promise<string[]> =>{
-  await requestStoragePermission()
   return RNFetchBlob.fs.ls(musicDir as string).then(files=>{
     return files.filter(file => {
       return !!(supportMusic.find(item=> file.toLocaleLowerCase().endsWith(item)))

@@ -21,11 +21,12 @@ export async function requestStoragePermission() {
   const granted = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
     {
-      title: '需要存储权限',
-      message: '为了保存与读取音乐文件以供离线使用，我们需要访问您的设备存储。',
-      buttonNeutral: '稍后询问',
-      buttonNegative: '拒绝',
-      buttonPositive: '允许',
+      title: '存储读写权限申请',
+        message:
+          '洛雪音乐助手需要使用存储读写权限才能读取音乐.',
+        buttonNeutral: '一会再问我',
+        buttonNegative: '取消',
+        buttonPositive: '确定',
     },
   );
   if (granted === PermissionsAndroid.RESULTS.GRANTED) {

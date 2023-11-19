@@ -8,6 +8,7 @@ import { windowSizeTools } from './utils/windowSizeTools'
 import { listenLaunchEvent } from './navigation/regLaunchedEvent'
 import { tipDialog } from './utils/tools'
 import {DeviceEventEmitter} from "react-native";
+import {requestStoragePermission} from "@/core/music/utils";
 
 console.log('starting app...')
 listenLaunchEvent()
@@ -53,8 +54,9 @@ const startPromise = Promise.all([getFontSize(), windowSizeTools.init()]).then(a
     if (!isInited) return
     // import('@/utils/nativeModules/cryptoTest')
 
-    await navigations.pushHomeScreen().then(() => {
+    await navigations.pushHomeScreen().then(async () => {
       void handlePushedHomeScreen()
+      await requestStoragePermission()
     }).catch((err: any) => {
       void tipDialog({
         title: 'Error',

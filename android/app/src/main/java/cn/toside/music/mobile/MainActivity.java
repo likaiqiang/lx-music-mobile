@@ -52,16 +52,16 @@ class MusicPlayer{
       Uri data = intent.getData();
 
       String realPath = getRealPathFromURI(data);
+      if(realPath != null){
+        WritableMap event = Arguments.createMap();
+        event.putString("path", realPath);
 
-      // 创建一个事件
-      WritableMap event = Arguments.createMap();
-      event.putString("path", realPath);
+        Log.d("Tag", event.toString());
 
-      Log.d("Tag", event.toString());
-
-      // 发送事件到RN
-      MainActivity.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-        .emit("onPathReceived", event);
+        // 发送事件到RN
+        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+          .emit("onPathReceived", event);
+      }
     }
   }
   private boolean filterIntent(Intent intent) {
@@ -83,12 +83,23 @@ class MusicPlayer{
     return result >= 0;
   }
   private String getRealPathFromURI(Uri contentUri) {
-    String[] proj = { MediaStore.Audio.Media.DATA };
-    CursorLoader loader = new CursorLoader(MainActivity.reactContext, contentUri, proj, null, null, null);
-    Cursor cursor = loader.loadInBackground();
-    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-    cursor.moveToFirst();
-    return cursor.getString(column_index);
+    String[] proj = {MediaStore.Audio.Media.DATA};
+    try {
+      CursorLoader loader = new CursorLoader(reactContext, contentUri, proj, null, null, null);
+      Cursor cursor = loader.loadInBackground();
+
+      if (cursor != null && cursor.moveToFirst()) {
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+        return cursor.getString(column_index);
+      } else {
+        // Handle the case where the cursor is null or empty
+        return null;
+      }
+    } catch (Exception e) {
+      // Handle more specific exceptions if needed
+      e.printStackTrace();
+      return null;
+    }
   }
   public void release() {
     reactContext = null;
@@ -97,21 +108,20 @@ class MusicPlayer{
 }
 
 public class MainActivity extends NavigationActivity {
-    private MusicPlayer musicPlayer = null;
-    public static ReactContext reactContext = null;
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-      super.onCreate(savedInstanceState);
-      musicPlayer = new MusicPlayer(this);
-    }
-    @Override
-    public void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        musicPlayer.sendUrl(intent);
-    }
-    @Override
-    protected void onDestroy(){
-      super.onDestroy();
-      musicPlayer.release();
-    }
+  private MusicPlayer musicPlayer = null;
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    musicPlayer = new MusicPlayer(this);
+  }
+  @Override
+  public void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    musicPlayer.sendUrl(intent);
+  }
+  @Override
+  protected void onDestroy(){
+    super.onDestroy();
+    musicPlayer.release();
+  }
 }
