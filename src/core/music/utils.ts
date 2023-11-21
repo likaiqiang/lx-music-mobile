@@ -51,7 +51,7 @@ const downloadMusicWithLrc = async ({url, fileName, musicInfo}: {url: string, fi
   return requestStoragePermission().then(async ()=>{
     const exists = await RNFetchBlob.fs.exists(path);
     if(exists && options.isSkipFile){
-      return Promise.reject('下载目录存在同名文件')
+      return Promise.reject('下载目录存在相同文件已跳过')
     }
     if(exists && !options.isSkipFile){
       path = `${dirs.DownloadDir}/lx.music/${fileName}_${Date.now()}.${extension}`;
@@ -87,11 +87,10 @@ const downloadMusicWithLrc = async ({url, fileName, musicInfo}: {url: string, fi
       })
     )
 
-    await Promise.allSettled(task)
-    console.log('File downloaded successfully.')
+    return Promise.allSettled(task)
 
-  }).catch(()=>{
-    toast("权限获取失败")
+  }).catch((e)=>{
+    return Promise.reject(e ?? "权限获取失败")
   })
 };
 
@@ -348,7 +347,6 @@ export const downloadMusic = (musicInfo: LX.Music.MusicInfoOnline, options: Down
     quality,
     onToggleSource:()=>{},
   }).then(async res=>{
-
     return downloadMusicWithLrc({
       url: res.url,
       fileName: `${res.musicInfo.singer}-${res.musicInfo.name}`,

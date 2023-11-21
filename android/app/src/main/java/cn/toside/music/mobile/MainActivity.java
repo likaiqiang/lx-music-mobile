@@ -27,26 +27,26 @@ import com.rnfs.UploadResult;
 
 class MusicPlayer{
   private ReactContext reactContext = null;
-  private MainActivity MainActivityContext = null;
+  private MainActivity mainActivityContext = null;
   MusicPlayer(MainActivity context){
-    MainActivityContext = context;
+    mainActivityContext = context;
     Intent intent = context.getIntent();
     final ReactInstanceManager reactInstanceManager = ((MainApplication) context.getApplication()).getReactNativeHost().getReactInstanceManager();
     reactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
       @Override
       public void onReactContextInitialized(ReactContext context) {
         reactContext = context;
-        sendUrl(intent);
+        sendIntent(intent);
       }
     });
 
     if (reactInstanceManager.hasStartedCreatingInitialContext()) {
       reactContext = reactInstanceManager.getCurrentReactContext();
       // ReactContext已经创建完成，可以直接获取
-      sendUrl(intent);
+      sendIntent(intent);
     }
   }
-  public void sendUrl(Intent intent){
+  public void sendIntent(Intent intent){
     if (intent!= null && intent.getAction().equals(Intent.ACTION_VIEW) && filterIntent(intent)) {
       // 获取intent的data，这是一个Uri对象
       Uri data = intent.getData();
@@ -79,7 +79,7 @@ class MusicPlayer{
     } catch (IntentFilter.MalformedMimeTypeException e){
       e.printStackTrace();
     }
-    int result = filter.match(MainActivityContext.getContentResolver(), intent, false, "TAG");
+    int result = filter.match(mainActivityContext.getContentResolver(), intent, false, "TAG");
     return result >= 0;
   }
   private String getRealPathFromURI(Uri contentUri) {
@@ -103,7 +103,7 @@ class MusicPlayer{
   }
   public void release() {
     reactContext = null;
-    MainActivityContext = null;
+    mainActivityContext = null;
   }
 }
 
@@ -117,11 +117,21 @@ public class MainActivity extends NavigationActivity {
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    musicPlayer.sendUrl(intent);
+    musicPlayer.sendIntent(intent);
   }
   @Override
   protected void onDestroy(){
     super.onDestroy();
     musicPlayer.release();
+  }
+
+  @Override
+  protected void onStart() {
+    super.onStart();
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
   }
 }

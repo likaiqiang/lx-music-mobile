@@ -56,7 +56,6 @@ const startPromise = Promise.all([getFontSize(), windowSizeTools.init()]).then(a
 
     await navigations.pushHomeScreen().then(async () => {
       void handlePushedHomeScreen()
-      await requestStoragePermission()
     }).catch((err: any) => {
       void tipDialog({
         title: 'Error',
@@ -80,7 +79,10 @@ const startPromise = Promise.all([getFontSize(), windowSizeTools.init()]).then(a
 })
 
 const eventListener = DeviceEventEmitter.addListener('onPathReceived', eventParams => {
-  startPromise.then(()=>{
+  Promise.all([
+    startPromise,
+    requestStoragePermission()
+  ]).then(()=>{
     console.log('onPathReceived',eventParams);
     if(eventParams.path){
       global.cache_event.launchFilePathUpdated(eventParams.path)
