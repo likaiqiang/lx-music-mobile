@@ -225,9 +225,7 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
             const renameIndex = newList.findIndex(item=> item.id === selectMusicInfo!.id)
             if(renameIndex > -1){
               newList[renameIndex] = generateEmptyLocalMusicInfo(`${renameInputRef.current}.${selectMusicInfo?.meta.ext}`,dirRef.current)
-              if (playMusicInfo.musicInfo?.id === selectMusicInfo!.id){
-                await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
-              }
+              await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
               setList(newList)
             }
             renameRef.current?.setVisible(false)
