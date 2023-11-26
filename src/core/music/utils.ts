@@ -349,7 +349,7 @@ export const downloadMusic = (musicInfo: LX.Music.MusicInfoOnline, options: Down
   }).then(async res=>{
     return downloadMusicWithLrc({
       url: res.url,
-      fileName: `${res.musicInfo.singer}-${res.musicInfo.name}`,
+      fileName: `${res.musicInfo.singer}-${res.musicInfo.name}-${quality}`,
       musicInfo
     }, options)
   }).then(()=>{

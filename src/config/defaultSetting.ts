@@ -73,7 +73,7 @@ const defaultSetting: LX.AppSetting = {
 
   'download.enable': false,
   'download.isDownloadLrc': true,
-  'download.skipIfFileExists': true
+  'download.skipIfFileExists': false
 }
 
 

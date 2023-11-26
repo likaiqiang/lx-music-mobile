@@ -12,6 +12,7 @@ import {getFileExtension, requestStoragePermission} from "@/core/music/utils";
 import {LIST_IDS} from "@/config/constant";
 import {getListMusicSync} from "@/utils/listManage";
 import {usePlayMusicInfo} from "@/store/player/hook";
+import cnchar from 'cnchar'
 
 import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './ListMenu'
 import {overwriteListMusics} from "@/core/list";
@@ -27,7 +28,9 @@ const scanMusicFiles = async (musicDir?:string): Promise<string[]> =>{
   return RNFetchBlob.fs.ls(musicDir as string).then(files=>{
     return files.filter(file => {
       return !!(supportMusic.find(item=> file.toLocaleLowerCase().endsWith(item)))
-    });
+    }).sort((a,b)=>{
+      return (cnchar.spell(a) as string).localeCompare((cnchar.spell(b) as string));
+    })
   })
 }
 
