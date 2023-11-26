@@ -54,6 +54,31 @@ const createDebouncedFunction = <T extends any[]>(
   };
 };
 
+const createSinglePromiseFunction = <T extends any[]>(
+  func: (...args: T) => Promise<void>
+): ((...args: T) => Promise<void>) => {
+  let lastPromise: Promise<void> | null = null;
+
+  return (...args: T): Promise<void> => {
+    // 如果上一个promise还没解决，则返回它
+    if (lastPromise) return lastPromise;
+
+    // 创建新的promise，并保存它
+    lastPromise = func(...args).then(
+      () => {
+        // 成功时重置promise为null
+        lastPromise = null;
+      },
+      () => {
+        // 失败时也重置promise为null
+        lastPromise = null;
+      }
+    );
+
+    return lastPromise;
+  };
+};
+
 
 const scanMusicFiles = async (musicDir?:string): Promise<string[]> =>{
   await requestStoragePermission()
@@ -120,7 +145,7 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
   const renameInputRef = useRef('')
   const t = useI18n()
 
-  const updateDownloadedList = createDebouncedFunction(async (): Promise<void> => {
+  const updateDownloadedList = createSinglePromiseFunction(async (): Promise<void> => {
     if (pathRef.current) {
       dirRef.current = pathRef.current.substring(0, pathRef.current.lastIndexOf('/'))
     }
@@ -134,7 +159,7 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
         setPath('');
       });
     }
-  },300)
+  })
 
   useImperativeHandle(ref,()=>{
     return {
