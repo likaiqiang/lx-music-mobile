@@ -39,7 +39,8 @@ export interface ListType {
   // getList: () => LX.Music.MusicInfoDownloaded[]
   // setStatus: (val: Status) => void
   jumpPosition: ()=> void,
-  playFilePath: (path: string)=>void
+  playFilePath: (path: string)=>void,
+  startRefresh: (action:Promise<any>)=>Promise<any>
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
@@ -91,6 +92,11 @@ const List = forwardRef<ListType, ListProps>(({
         if(index > -1){
           handlelocalPlay(list[index])
         }
+      },
+      async startRefresh(action){
+        setStatus("refreshing")
+        await action
+        setStatus('idle')
       }
     }
   })

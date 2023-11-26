@@ -10,15 +10,17 @@ import {InitState as CommonState} from "@/store/common/state";
 import RNFetchBlob from "rn-fetch-blob";
 import {getFileExtension, requestStoragePermission} from "@/core/music/utils";
 import {LIST_IDS} from "@/config/constant";
-import {getListMusicSync} from "@/utils/listManage";
 import {usePlayMusicInfo} from "@/store/player/hook";
 import cnchar from 'cnchar'
+import cloneDeep from 'clone-deep'
 
 import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './ListMenu'
 import {overwriteListMusics} from "@/core/list";
 import ConfirmAlert, {ConfirmAlertType} from "@/components/common/ConfirmAlert";
 import Text from "@/components/common/Text";
 import BackgroundTimer from "react-native-background-timer";
+import InputItem from "@/screens/Home/Views/Setting/components/InputItem";
+import {useI18n} from "@/lang";
 
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
 
@@ -77,6 +79,7 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
   const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
   const listMenuRef = useRef<ListMenuType>(null)
   const confirmAlertRef = useRef<ConfirmAlertType>(null)
+  const renameRef = useRef<ConfirmAlertType>(null)
   const [selectMusicInfo, setSelectMusicInfo] = useState<LX.Music.MusicInfoLocal>()
   const playMusicInfo = usePlayMusicInfo()
   const timerRef = useRef<number>()
@@ -84,6 +87,8 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
   const pathRef = useRef<string>(path)
   pathRef.current = path
   const dirRef = useRef(`${RNFetchBlob.fs.dirs.DownloadDir}/lx.music`)
+  const renameInputRef = useRef('')
+  const t = useI18n()
 
   const updateDownloadedList = async ():Promise<void> =>{
     if(timerRef.current) BackgroundTimer.clearTimeout(timerRef.current)
@@ -121,11 +126,15 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
     }, position)
   }
   useEffect(() => {
-    updateDownloadedList().then()
+    listRef.current?.startRefresh(
+      updateDownloadedList()
+    ).then()
 
     const handleNavIdUpdate = (id: CommonState['navActiveId'])=>{
       if (id == 'nav_download'){
-        updateDownloadedList().then()
+        listRef.current?.startRefresh(
+          updateDownloadedList()
+        ).then()
       }
     }
 
@@ -139,7 +148,9 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
     global.app_event.on('jumpDownloadListPosition',handleDownloadListPositionChange)
     const appStateSubscription = AppState.addEventListener('change',e=>{
       if(e === 'active'){
-        updateDownloadedList().then()
+        listRef.current?.startRefresh(
+          updateDownloadedList()
+        ).then()
       }
     })
     return () => {
@@ -174,12 +185,23 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
             setSelectMusicInfo(info.musicInfo as LX.Music.MusicInfoLocal)
             confirmAlertRef.current?.setVisible(true)
           }}
+          onrRename={(info)=>{
+            setSelectMusicInfo(info.musicInfo as LX.Music.MusicInfoLocal)
+            renameRef.current?.setVisible(true)
+          }}
       />
       <ConfirmAlert
           onConfirm={()=>{
-            RNFetchBlob.fs.unlink(selectMusicInfo!.meta.filePath).then(()=>{
-              return updateDownloadedList()
-            }).then(()=>{
+            RNFetchBlob.fs.unlink(selectMusicInfo!.meta.filePath).then(async ()=>{
+              const newList: LX.Music.MusicInfoLocal[] = cloneDeep(list)
+              const deletedIndex = newList.findIndex(item=> item.id === selectMusicInfo!.id)
+              if(deletedIndex > -1){
+                newList.splice(deletedIndex,1)
+                if (playMusicInfo.musicInfo?.id === selectMusicInfo!.id){
+                  await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
+                }
+                setList(newList)
+              }
               confirmAlertRef.current!.setVisible(false)
             })
           }}
@@ -189,6 +211,39 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
         <Text style={{textAlign:'center'}}>
           {confirmAlertText}
         </Text>
+      </ConfirmAlert>
+      <ConfirmAlert
+        ref={renameRef}
+        onConfirm={()=>{
+          const originalPath = `${dirRef.current}/${selectMusicInfo!.name}`
+          const latestPath = `${dirRef.current}/${renameInputRef.current}`
+          Promise.all([
+            RNFetchBlob.fs.mv(`${originalPath}.${selectMusicInfo?.meta.ext}`,`${latestPath}.${selectMusicInfo?.meta.ext}`),
+            RNFetchBlob.fs.mv(`${originalPath}.lrc`,`${latestPath}.lrc`)
+          ]).then(async ()=>{
+            const newList: LX.Music.MusicInfoLocal[] = cloneDeep(list)
+            const renameIndex = newList.findIndex(item=> item.id === selectMusicInfo!.id)
+            if(renameIndex > -1){
+              newList[renameIndex] = generateEmptyLocalMusicInfo(`${renameInputRef.current}.${selectMusicInfo?.meta.ext}`,dirRef.current)
+              if (playMusicInfo.musicInfo?.id === selectMusicInfo!.id){
+                await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
+              }
+              setList(newList)
+            }
+            renameRef.current?.setVisible(false)
+          })
+        }}
+      >
+        <Text>{t('list_rename')}</Text>
+        <InputItem
+          editable={true}
+          value={selectMusicInfo?.name!}
+          label={''}
+          containerStyle={{paddingLeft:0}}
+          onChanged={()=>{}}
+          onChangeText={(text)=>{
+            renameInputRef.current = text
+          }}/>
       </ConfirmAlert>
     </View>
   )

@@ -12,7 +12,8 @@ export interface SelectInfo {
 const initSelectInfo = {}
 
 export interface ListMenuProps {
-    onRemove: (selectInfo: SelectInfo) => void
+    onRemove: (selectInfo: SelectInfo) => void,
+    onrRename: (selectInfo: SelectInfo)=>void
 }
 export interface ListMenuType {
     show: (selectInfo: SelectInfo, position: Position) => void
@@ -40,13 +41,19 @@ export default forwardRef<ListMenuType, ListMenuProps>((props, ref) => {
             }
         },
     }))
-    const menus = [{ action: 'remove', label: t('delete') }]
+    const menus = [
+      { action: 'remove', label: t('delete') },
+      { action: 'rename', label: t('list_rename') }
+    ]
     const handleMenuPress = ({ action }: typeof menus[number]) => {
         const selectInfo = selectInfoRef.current
         switch (action) {
             case 'remove':
                 props.onRemove(selectInfo)
                 break
+            case 'rename':
+              props.onrRename(selectInfo)
+              break
             default:
                 break
         }
