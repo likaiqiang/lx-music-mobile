@@ -3,7 +3,7 @@ import {
   AppState,
   Platform
 } from 'react-native'
-import {createStyle} from "@/utils/tools";
+import {createStyle, toast} from "@/utils/tools";
 import List, {ListType} from "./List";
 import React, {useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {InitState as CommonState} from "@/store/common/state";
@@ -265,22 +265,28 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
       </ConfirmAlert>
       <ConfirmAlert
         ref={renameRef}
-        onConfirm={()=>{
+        onConfirm={async ()=>{
           const originalPath = `${dirRef.current}/${selectMusicInfo!.name}`
           const latestPath = `${dirRef.current}/${renameInputRef.current}`
-          Promise.all([
-            RNFetchBlob.fs.mv(`${originalPath}.${selectMusicInfo?.meta.ext}`,`${latestPath}.${selectMusicInfo?.meta.ext}`),
-            RNFetchBlob.fs.mv(`${originalPath}.lrc`,`${latestPath}.lrc`)
-          ]).then(async ()=>{
-            const newList: LX.Music.MusicInfoLocal[] = cloneDeep(list)
-            const renameIndex = newList.findIndex(item=> item.id === selectMusicInfo!.id)
-            if(renameIndex > -1){
-              newList[renameIndex] = generateEmptyLocalMusicInfo(`${renameInputRef.current}.${selectMusicInfo?.meta.ext}`,dirRef.current)
-              await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
-              setList(newList)
-            }
-            renameRef.current?.setVisible(false)
-          })
+          const exist = await RNFetchBlob.fs.exists(`${latestPath}.${selectMusicInfo?.meta.ext}`)
+          if(!exist){
+            Promise.all([
+              RNFetchBlob.fs.mv(`${originalPath}.${selectMusicInfo?.meta.ext}`,`${latestPath}.${selectMusicInfo?.meta.ext}`),
+              RNFetchBlob.fs.mv(`${originalPath}.lrc`,`${latestPath}.lrc`)
+            ]).then(async ()=>{
+              const newList: LX.Music.MusicInfoLocal[] = cloneDeep(list)
+              const renameIndex = newList.findIndex(item=> item.id === selectMusicInfo!.id)
+              if(renameIndex > -1){
+                newList[renameIndex] = generateEmptyLocalMusicInfo(`${renameInputRef.current}.${selectMusicInfo?.meta.ext}`,dirRef.current)
+                await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
+                setList(newList)
+              }
+              renameRef.current?.setVisible(false)
+            })
+          }
+          else{
+            toast('文件名重复!','short', 'top')
+          }
         }}
       >
         <Text>{t('list_rename')}</Text>
