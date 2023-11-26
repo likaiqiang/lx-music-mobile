@@ -18,11 +18,41 @@ import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './L
 import {overwriteListMusics} from "@/core/list";
 import ConfirmAlert, {ConfirmAlertType} from "@/components/common/ConfirmAlert";
 import Text from "@/components/common/Text";
-import BackgroundTimer from "react-native-background-timer";
+import BackgroundTimer, {TimeoutId} from "react-native-background-timer";
 import InputItem from "@/screens/Home/Views/Setting/components/InputItem";
 import {useI18n} from "@/lang";
 
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
+
+const createDebouncedFunction = <T extends any[]>(
+  func: (...args: T) => Promise<void>,
+  wait: number
+): ((...args: T) => Promise<void>) => {
+  let timeoutId: TimeoutId | null;
+  let pendingPromiseReject: ((reason?: any) => void) | null = null;
+
+  return (...args: T): Promise<void> => {
+    // 返回一个新的Promise
+    return new Promise<void>((resolve, reject) => {
+      // 如果已存在timeoutId，则清除并拒绝挂起的Promise
+      if (timeoutId) {
+        BackgroundTimer.clearTimeout(timeoutId);
+        if (pendingPromiseReject) {
+          pendingPromiseReject(new Error("Debounced"));
+        }
+      }
+      pendingPromiseReject = reject; // 存储当前Promise的reject方法
+
+      // 设置一个新的定时器
+      timeoutId = BackgroundTimer.setTimeout(() => {
+        timeoutId = null
+        pendingPromiseReject = null;
+        // 调用原始函数并传递参数，然后根据执行结果解决或拒绝Promise
+        func(...args).then(resolve).catch(reject);
+      }, wait);
+    });
+  };
+};
 
 
 const scanMusicFiles = async (musicDir?:string): Promise<string[]> =>{
@@ -90,25 +120,21 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
   const renameInputRef = useRef('')
   const t = useI18n()
 
-  const updateDownloadedList = async ():Promise<void> =>{
-    if(timerRef.current) BackgroundTimer.clearTimeout(timerRef.current)
-    if(pathRef.current){
+  const updateDownloadedList = createDebouncedFunction(async (): Promise<void> => {
+    if (pathRef.current) {
       dirRef.current = pathRef.current.substring(0, pathRef.current.lastIndexOf('/'))
     }
-    timerRef.current = BackgroundTimer.setTimeout(()=>{
-      scanMusicFiles(dirRef.current).then(files=>{
-        const updatedList = files.map((file=> generateEmptyLocalMusicInfo(file, dirRef.current)))
-        setList(updatedList)
-        overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false)
-        if(pathRef.current){
-          requestAnimationFrame(()=>{
-            listRef.current!.playFilePath(pathRef.current)
-            setPath('')
-          })
-        }
-      })
-    },300)
-  }
+    const files = await scanMusicFiles(dirRef.current);
+    const updatedList = files.map((file => generateEmptyLocalMusicInfo(file, dirRef.current)));
+    setList(updatedList);
+    await overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false);
+    if (pathRef.current) {
+      requestAnimationFrame(() => {
+        listRef.current!.playFilePath(pathRef.current);
+        setPath('');
+      });
+    }
+  },300)
 
   useImperativeHandle(ref,()=>{
     return {
@@ -146,17 +172,17 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
 
     global.state_event.on('navActiveIdUpdated', handleNavIdUpdate)
     global.app_event.on('jumpDownloadListPosition',handleDownloadListPositionChange)
-    const appStateSubscription = AppState.addEventListener('change',e=>{
-      if(e === 'active'){
-        listRef.current?.startRefresh(
-          updateDownloadedList()
-        ).then()
-      }
-    })
+    // const appStateSubscription = AppState.addEventListener('change',e=>{
+    //   if(e === 'active'){
+    //     listRef.current?.startRefresh(
+    //       updateDownloadedList()
+    //     ).then()
+    //   }
+    // })
     return () => {
       global.state_event.off('navActiveIdUpdated', handleNavIdUpdate)
       global.app_event.off('jumpDownloadListPosition',handleDownloadListPositionChange)
-      appStateSubscription.remove()
+      // appStateSubscription.remove()
     }
   }, []);
   const confirmAlertText = useMemo(()=>{
