@@ -42,6 +42,10 @@ public class MetaDataModule extends ReactContextBaseJavaModule {
   }
   @ReactMethod
   public void saveMetadata(String filePath, ReadableMap metadata, Promise promise) {
+    if (!filePath.toLowerCase().endsWith(".mp3")) {
+      promise.reject("Unsupported Format", "This method only supports MP3 files.");
+      return;
+    }
     try {
       File audioFile = new File(filePath);
       AudioFile f = AudioFileIO.read(audioFile);
@@ -67,9 +71,6 @@ public class MetaDataModule extends ReactContextBaseJavaModule {
         Bitmap bitmap = BitmapFactory.decodeStream(input);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
-        byte[] apicData = new byte[3];
-        input.read(apicData, 0, 3);
-        String mime_type;
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
 
         Artwork artwork = ArtworkFactory.getNew();
