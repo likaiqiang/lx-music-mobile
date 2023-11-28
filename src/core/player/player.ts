@@ -122,7 +122,7 @@ const getMusicPlayUrl = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListIt
 }
 
 
-export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem | LX.Music.MusicInfoDownloaded, isRefresh?: boolean) => {
+export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem | LX.Music.MusicInfoLocal, isRefresh?: boolean) => {
   // addLoadTimeout()
   if (!diffCurrentMusicInfo(musicInfo)) return
   if (cancelDelayRetry) cancelDelayRetry()
@@ -147,7 +147,7 @@ export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
     })
   }
   else{
-    const _musicInfo = musicInfo as LX.Music.MusicInfoDownloaded
+    const _musicInfo = musicInfo as LX.Music.MusicInfoLocal
     setResource(_musicInfo, _musicInfo.meta.filePath, playerState.progress.nowPlayTime)
     if (_musicInfo === playerState.playMusicInfo.musicInfo) {
       global.lx.gettingUrlId = ''
@@ -251,38 +251,26 @@ const handleLocalPlay = async ()=>{
 
   setMusicUrl(musicInfo as LX.Music.MusicInfoLocal) // 核心
 
-  if((musicInfo as LX.Music.MusicInfoLocal).source === 'local'){
-    const _musicInfo = musicInfo as LX.Music.MusicInfoLocal
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setMusicInfo({ pic: '' })
-    global.app_event.picUpdated()
-    //load lrc
-    await requestStoragePermission()
+  const _musicInfo = musicInfo as LX.Music.MusicInfoLocal
+  if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+  setMusicInfo({ pic: (musicInfo as LX.Music.MusicInfoLocal).meta.picUrl ?? '' })
+  global.app_event.picUpdated()
+  //load lrc
+  await requestStoragePermission()
 
-    if(musicInfo.id.startsWith('local__')){
-      const lrcExist = await RNFetchBlob.fs.exists(
-        getLyricsFilePath(_musicInfo.meta.filePath)
-      )
-      let lrc = ''
-      if(lrcExist) lrc = await RNFetchBlob.fs.readFile(getLyricsFilePath(_musicInfo.meta.filePath), 'utf8')
-      setMusicInfo({
-        lrc,
-        tlrc: '',
-        lxlrc: '',
-        rlrc: '',
-        rawlrc: '',
-      })
-    }
-    global.app_event.lyricUpdated()
-  }
-  else{
-    void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
-      if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-      setMusicInfo({ pic: url })
-      global.app_event.picUpdated()
-    })
-    handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
-  }
+  const lrcExist = await RNFetchBlob.fs.exists(
+    getLyricsFilePath(_musicInfo.meta.filePath)
+  )
+  let lrc = ''
+  if(lrcExist) lrc = await RNFetchBlob.fs.readFile(getLyricsFilePath(_musicInfo.meta.filePath), 'utf8')
+  setMusicInfo({
+    lrc,
+    tlrc: '',
+    lxlrc: '',
+    rlrc: '',
+    rawlrc: '',
+  })
+  global.app_event.lyricUpdated()
 }
 
 

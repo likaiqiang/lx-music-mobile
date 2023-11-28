@@ -83,7 +83,6 @@ declare namespace LX {
     }
 
     type MusicInfoOnline = MusicInfo_online_common | MusicInfo_kg | MusicInfo_tx | MusicInfo_mg
-    type MusicInfoDownloaded = MusicInfoLocal
     type MusicInfo = MusicInfoOnline | MusicInfoLocal
 
     interface LyricInfo {

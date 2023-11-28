@@ -21,6 +21,7 @@ import Text from "@/components/common/Text";
 import BackgroundTimer, {TimeoutId} from "react-native-background-timer";
 import InputItem from "@/screens/Home/Views/Setting/components/InputItem";
 import {useI18n} from "@/lang";
+import {getMetaData} from "@/utils/nativeModules/metadata";
 
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
 
@@ -81,12 +82,17 @@ const createSinglePromiseFunction = <T extends any[]>(
 
 
 const scanMusicFiles = async (musicDir?:string): Promise<string[]> =>{
-  await requestStoragePermission()
+  try{
+    await requestStoragePermission()
+  } catch (e){
+    toast('权限获取失败!')
+    return Promise.reject(e)
+  }
   return RNFetchBlob.fs.ls(musicDir as string).then(files=>{
     return files.filter(file => {
       return !!(supportMusic.find(item=> file.toLocaleLowerCase().endsWith(item)))
     }).sort((a,b)=>{
-      return (cnchar.spell(a) as string).localeCompare((cnchar.spell(b) as string));
+      return getSpelledName(a).localeCompare(getSpelledName(b));
     })
   })
 }
@@ -104,19 +110,32 @@ function generateRandomId() {
   return 'id-' + Math.random().toString(36).slice(2, 9) + Date.now();
 }
 
-function generateEmptyLocalMusicInfo(fullName: string, dir: string): LX.Music.MusicInfoDownloaded{
+const spelledNamesMap = new Map();
+
+const getSpelledName = (fileName:string) => {
+  const lowerCaseFileName = fileName.toLocaleLowerCase();
+  if (!spelledNamesMap.has(lowerCaseFileName)) {
+    spelledNamesMap.set(lowerCaseFileName, cnchar.spell(lowerCaseFileName));
+  }
+  return spelledNamesMap.get(lowerCaseFileName);
+}
+
+async function generateEmptyLocalMusicInfo(fullName: string, dir: string): Promise<LX.Music.MusicInfoLocal & {quality?: LX.Quality}>{
   const filePath = `${dir}/${fullName}`
   const id = `local__${filePath}`
+  const {singer, quality,picUrl} = await getMetaData(filePath)
+
   return {
     "id": id,
-    "name": getFileNameWithoutExtension(fullName),
-    "singer":'',
+    "name": getFileNameWithoutExtension(fullName) ?? '',
+    "singer": singer ?? '',
     "source":'local',
     "interval":'',
+    "quality":quality,
     "meta": {
       "songId": id,
       "albumName": "",
-      "picUrl":"",
+      "picUrl": picUrl ?? '',
       "fileName": getFileNameWithoutExtension(fullName),
       "ext": getFileExtension(fullName),
       'filePath': filePath
@@ -131,7 +150,7 @@ export interface DownloadTypes {
 
 export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
   const listRef = useRef<ListType>(null)
-  const [list, setList] = useState<LX.Music.MusicInfoDownloaded[]>([])
+  const [list, setList] = useState<(LX.Music.MusicInfoLocal & {quality?: LX.Quality})[]>([])
   const listMenuRef = useRef<ListMenuType>(null)
   const confirmAlertRef = useRef<ConfirmAlertType>(null)
   const renameRef = useRef<ConfirmAlertType>(null)
@@ -150,7 +169,9 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
       dirRef.current = pathRef.current.substring(0, pathRef.current.lastIndexOf('/'))
     }
     const files = await scanMusicFiles(dirRef.current);
-    const updatedList = files.map((file => generateEmptyLocalMusicInfo(file, dirRef.current)));
+    const updatedList = await Promise.all(
+      files.map((file => generateEmptyLocalMusicInfo(file, dirRef.current)))
+    );
     setList(updatedList);
     await overwriteListMusics(LIST_IDS.DOWNLOAD, updatedList, false);
     if (pathRef.current) {
@@ -220,7 +241,10 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
         ref={listRef}
         onLoadMore={()=>{}}
         onRefresh={()=>{
-          updateDownloadedList().then()
+          listRef.current?.setStatus('refreshing')
+          updateDownloadedList().then(()=>{
+            listRef.current?.setStatus('idle')
+          })
         }}
         checkHomePagerIdle={false}
         list={list}
@@ -277,7 +301,7 @@ export default React.forwardRef<DownloadTypes,{}>((_, ref) => {
               const newList: LX.Music.MusicInfoLocal[] = cloneDeep(list)
               const renameIndex = newList.findIndex(item=> item.id === selectMusicInfo!.id)
               if(renameIndex > -1){
-                newList[renameIndex] = generateEmptyLocalMusicInfo(`${renameInputRef.current}.${selectMusicInfo?.meta.ext}`,dirRef.current)
+                newList[renameIndex] = await generateEmptyLocalMusicInfo(`${renameInputRef.current}.${selectMusicInfo?.meta.ext}`,dirRef.current)
                 await overwriteListMusics(LIST_IDS.DOWNLOAD, newList, false)
                 setList(newList)
               }

@@ -14,28 +14,25 @@ import playerState from "@/store/player/state";
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
-const useQualityTag = (musicInfo: LX.Music.MusicInfoBase) => {
+const useQualityTag = (quality?: LX.Quality) => {
   const t = useI18n()
   let info: { type: BadgeType | null, text: string } = { type: null, text: '' }
-  // @ts-ignore
-  if(!musicInfo.source === 'local'){
-    const _musicInfo = musicInfo as LX.Music.MusicInfoOnline
-    if (_musicInfo.meta._qualitys.flac24bit) {
-      info.type = 'secondary'
-      info.text = t('quality_lossless_24bit')
-    } else if (_musicInfo.meta._qualitys.flac ?? _musicInfo.meta._qualitys.ape) {
-      info.type = 'secondary'
-      info.text = t('quality_lossless')
-    } else if (_musicInfo.meta._qualitys['320k']) {
-      info.type = 'tertiary'
-      info.text = t('quality_high_quality')
-    }
+  if (quality === 'flac24bit') {
+    info.type = 'secondary'
+    info.text = t('quality_lossless_24bit')
+  } else if (quality === 'flac' || quality === 'ape') {
+    info.type = 'secondary'
+    info.text = t('quality_lossless')
+  } else if (quality ==='320k') {
+    info.type = 'tertiary'
+    info.text = t('quality_high_quality')
   }
+
   return info
 }
 
 export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInterval, isActive, onShowMenu }: {
-  item: LX.Music.MusicInfoDownloaded
+  item: LX.Music.MusicInfoLocal & {quality?: LX.Quality}
   index: number
   showSource?: boolean
   onPress: (item: LX.Music.MusicInfoLocal, index: number) => void
@@ -60,7 +57,7 @@ export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInt
   const isSupported = useAssertApiSupport(item.source)
 
   const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
-
+  const tagInfo = useQualityTag(item.quality)
   return (
     <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT, backgroundColor: 'rgba(0,0,0,0)', opacity: isSupported ? 1 : 0.5 }}>
       <TouchableOpacity style={styles.listItemLeft} onPress={() => { onPress(item, index) }}>
@@ -71,9 +68,10 @@ export default memo(({ item, index, onPress, rowInfo, isShowAlbumName, isShowInt
         }
         <View style={styles.itemInfo}>
           {/* <View style={styles.listItemTitle}> */}
-          <Text color={isActive ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>{item.name + '.' +item.meta.ext}</Text>
+          <Text color={isActive ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>{(item.name) + '.' +item.meta.ext}</Text>
           {/* </View> */}
           <View style={styles.listItemSingle}>
+            { tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null }
             <Badge>{item.source.toUpperCase()}</Badge>
             <Text style={styles.listItemSingleText} size={11} color={isActive ? theme['c-primary-alpha-200'] : theme['c-500']} numberOfLines={1}>
               {singer}

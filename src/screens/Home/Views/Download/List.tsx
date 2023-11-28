@@ -15,14 +15,14 @@ import playerState from "@/store/player/state";
 import {useActiveListId} from "@/store/list/hook";
 import {usePlayInfo, usePlayMusicInfo} from "@/store/player/hook";
 
-type FlatListType = FlatListProps<LX.Music.MusicInfoDownloaded>
+type FlatListType = FlatListProps<LX.Music.MusicInfoLocal>
 
 export type {
   RowInfoType,
 }
 
 export interface ListProps {
-  list: LX.Music.MusicInfoDownloaded[]
+  list: LX.Music.MusicInfoLocal[] & {quality?: LX.Quality}
   playid: string
   onRefresh: () => void
   onLoadMore: () => void
@@ -31,7 +31,7 @@ export interface ListProps {
   ListHeaderComponent?: FlatListType['ListEmptyComponent']
   checkHomePagerIdle: boolean
   rowType?: RowInfoType
-  onPress?: (item: LX.Music.MusicInfoDownloaded)=>void
+  onPress?: (item: LX.Music.MusicInfoLocal)=>void
   onShowMenu: (musicInfo: LX.Music.MusicInfoLocal, index: number, position: Position) => void
 }
 export interface ListType {
@@ -40,7 +40,8 @@ export interface ListType {
   // setStatus: (val: Status) => void
   jumpPosition: ()=> void,
   playFilePath: (path: string)=>void,
-  startRefresh: (action:Promise<any>)=>Promise<any>
+  startRefresh: (action:Promise<any>)=>Promise<any>,
+  setStatus: (s: Status)=>void
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
@@ -66,7 +67,7 @@ const List = forwardRef<ListType, ListProps>(({
   const isShowAlbumName = useSettingValue('list.isShowAlbumName')
   const isShowInterval = useSettingValue('list.isShowInterval')
 
-  const handlePress = (item: LX.Music.MusicInfoDownloaded, index: number) => {
+  const handlePress = (item: LX.Music.MusicInfoLocal, index: number) => {
     requestAnimationFrame(() => {
       if (checkHomePagerIdle && !global.lx.homePagerIdle) return
       // if (settingState.setting['list.isClickPlayList'] && onPlayList != null) {
@@ -97,7 +98,8 @@ const List = forwardRef<ListType, ListProps>(({
         setStatus("refreshing")
         await action
         setStatus('idle')
-      }
+      },
+      setStatus
     }
   })
   const renderItem: FlatListType['renderItem'] = ({ item, index }) => {
