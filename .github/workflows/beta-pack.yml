@@ -1,4 +1,5 @@
 name: Build Beta
+run-name: 'Build Beta ${{ github.event.inputs.name }}'
 
 on:
   workflow_dispatch:
