@@ -2,6 +2,10 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      name:
+        description: 'Enter your build name'
+        required: true
 
 jobs:
   Android:
