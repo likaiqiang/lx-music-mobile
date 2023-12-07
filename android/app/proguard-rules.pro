@@ -9,3 +9,6 @@
 
 # Add any project specific keep options here:
 -keep class org.jaudiotagger.** { *; }
+
+-keep class com.reactnativenavigation.views.element.animators.** { *; }
+# -keepclassmembers class com.reactnativenavigation.views.element.animators.** { *; }
