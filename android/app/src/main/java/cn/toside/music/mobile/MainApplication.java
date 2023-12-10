@@ -1,17 +1,21 @@
 package cn.toside.music.mobile;
 
+import android.app.Application;
 import com.facebook.react.PackageList;
 import com.facebook.react.flipper.ReactNativeFlipper;
 import com.reactnativenavigation.NavigationApplication;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
+import com.facebook.react.defaults.DefaultReactNativeHost;
 import com.reactnativenavigation.react.NavigationReactNativeHost;
+import com.facebook.soloader.SoLoader;
 import java.util.List;
 
 import cn.toside.music.mobile.cache.CachePackage;
 import cn.toside.music.mobile.crypto.CryptoPackage;
 import cn.toside.music.mobile.gzip.GzipPackage;
+import cn.toside.music.mobile.localMedia.LocalMediaPackage;
 import cn.toside.music.mobile.lyric.LyricPackage;
 import cn.toside.music.mobile.userApi.UserApiPackage;
 import cn.toside.music.mobile.mediameta.MediaMetaPackage;
@@ -38,6 +42,7 @@ public class MainApplication extends NavigationApplication {
           packages.add(new UtilsPackage());
           packages.add(new CryptoPackage());
           packages.add(new UserApiPackage());
+          packages.add(new LocalMediaPackage());
           packages.add(new MediaMetaPackage());
           return packages;
         }
