@@ -191,7 +191,6 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
 
   if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
 }
-
 function getLyricsFilePath(musicFilePath: string) {
   return musicFilePath.replace(/\.[^/.]+$/, '.lrc');
 }
@@ -214,6 +213,19 @@ function handleGetLyricInfo(playMusicInfo: LX.Player.PlayMusicInfo){
     setStatusText(global.i18n.t('lyric__load_error'))
   })
 }
+
+const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) => {
+  const playMusicInfo = playerState.playMusicInfo
+  setMusicUrl(musicInfo as LX.Music.MusicInfo) // 核心
+
+  void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
+    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+    setMusicInfo({ pic: url })
+    global.app_event.picUpdated()
+  })
+
+  handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
+}, 200)
 
 const handleLocalPlay = async ()=>{
   if (!isInitialized()) {
@@ -272,20 +284,6 @@ const handleLocalPlay = async ()=>{
   })
   global.app_event.lyricUpdated()
 }
-
-
-const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) => {
-    const playMusicInfo = playerState.playMusicInfo
-    setMusicUrl(musicInfo as LX.Music.MusicInfo) // 核心
-
-    void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
-        if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-        setMusicInfo({ pic: url })
-        global.app_event.picUpdated()
-    })
-
-    handleGetLyricInfo(playMusicInfo as LX.Player.PlayMusicInfo)
-}, 200)
 
 // 处理音乐播放
 // TODO
