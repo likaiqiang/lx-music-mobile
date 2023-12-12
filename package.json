@@ -1,6 +1,6 @@
 {
   "name": "lx-music-mobile",
-  "version": "1.2.0-beta.9",
+  "version": "1.2.0-beta.10",
   "versionCode": 62,
   "private": true,
   "scripts": {
@@ -46,7 +46,7 @@
   "dependencies": {
     "@craftzdog/react-native-buffer": "^6.0.5",
     "@react-native-async-storage/async-storage": "^1.21.0",
-    "@react-native-clipboard/clipboard": "^1.12.1",
+    "@react-native-clipboard/clipboard": "^1.13.0",
     "@react-native-community/slider": "^4.4.4",
     "cnchar": "^3.2.4",
     "iconv-lite": "^0.6.3",
@@ -68,11 +68,11 @@
     "rn-fetch-blob": "^0.12.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.5",
+    "@babel/core": "^7.23.6",
     "@babel/eslint-parser": "^7.23.3",
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
-    "@babel/preset-env": "^7.23.5",
-    "@babel/runtime": "^7.23.5",
+    "@babel/preset-env": "^7.23.6",
+    "@babel/runtime": "^7.23.6",
     "@react-native/babel-preset": "^0.74.0",
     "@react-native/metro-config": "^0.73.2",
     "@react-native/typescript-config": "^0.74.0",
