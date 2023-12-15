@@ -43,7 +43,6 @@ export function getFileExtension(url:string) {
 }
 
 const downloadMusicWithLrc = async ({url, fileName, musicInfo, picUrl, quality}: {url: string, fileName: string, musicInfo: LX.Music.MusicInfoOnline, picUrl?:string, quality?: LX.Quality} ,options: DownloadOptions) => {
-
   const dirs = RNFetchBlob.fs.dirs;
   const extension = getFileExtension(url);
   let path = `${dirs.DownloadDir}/lx.music/${fileName}.${extension}`;
@@ -83,7 +82,7 @@ const downloadMusicWithLrc = async ({url, fileName, musicInfo, picUrl, quality}:
       return writeMetaData(path,{
         singer: musicInfo.singer,
         name: musicInfo.name,
-        picUrl,
+        picUrl: (typeof picUrl === "string" && picUrl.startsWith('http') ? picUrl : undefined),
         quality
       })
     })

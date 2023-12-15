@@ -13,7 +13,7 @@ import cn.toside.music.mobile.crypto.CryptoPackage;
 import cn.toside.music.mobile.gzip.GzipPackage;
 import cn.toside.music.mobile.lyric.LyricPackage;
 import cn.toside.music.mobile.userApi.UserApiPackage;
-import cn.toside.music.mobile.audiometadata.MetaDataPackage;
+import cn.toside.music.mobile.mediameta.MediaMetaPackage;
 import cn.toside.music.mobile.utils.UtilsPackage;
 
 public class MainApplication extends NavigationApplication {
@@ -37,7 +37,7 @@ public class MainApplication extends NavigationApplication {
           packages.add(new UtilsPackage());
           packages.add(new CryptoPackage());
           packages.add(new UserApiPackage());
-          packages.add(new MetaDataPackage());
+          packages.add(new MediaMetaPackage());
           return packages;
         }
 

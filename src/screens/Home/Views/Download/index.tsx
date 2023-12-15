@@ -21,7 +21,7 @@ import Text from "@/components/common/Text";
 import BackgroundTimer, {TimeoutId} from "react-native-background-timer";
 import InputItem from "@/screens/Home/Views/Setting/components/InputItem";
 import {useI18n} from "@/lang";
-import {getMetaData} from "@/utils/nativeModules/metadata";
+import {readMetadata} from "@/utils/nativeModules/metadata";
 
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
 
@@ -123,7 +123,7 @@ const getSpelledName = (fileName:string) => {
 async function generateEmptyLocalMusicInfo(fullName: string, dir: string): Promise<LX.Music.MusicInfoLocal & {quality?: LX.Quality}>{
   const filePath = `${dir}/${fullName}`
   const id = `local__${filePath}`
-  const {singer, quality,picUrl} = await getMetaData(filePath)
+  const {singer, quality,picUrl} = await readMetadata(filePath)
 
   return {
     "id": id,

@@ -1,17 +1,24 @@
 import { NativeModules } from 'react-native'
 
-const {MetaDataModule} = NativeModules
+const {MediaMeta} = NativeModules
 
-interface Metadata{
-  singer:string,
-  name: string,
-  picUrl?: string,
-  quality?: LX.Quality
+
+export async function readMetadata(filePath:string): Promise<LX.Music.MetaData> {
+  try{
+    return await MediaMeta.get(filePath)
+  } catch {
+    console.log('getMetaData catch');
+    return {
+      singer:'',
+      picUrl:'',
+      name:''
+    }
+  }
 }
 
-export const writeMetaData = async (filePath:string, metadata: Metadata)=>{
+export const writeMetaData = async (filePath:string, metadata: LX.Music.MetaData)=>{
   try{
-    await MetaDataModule.saveMetadata(
+    await MediaMeta.set(
       filePath,
       {
         singer: metadata.singer,
@@ -22,17 +29,5 @@ export const writeMetaData = async (filePath:string, metadata: Metadata)=>{
     )
   } catch {
       console.log('writeMetaData catch');
-  }
-}
-export const getMetaData = async (filePath:string)=>{
-  try{
-    return await MetaDataModule.readMetadata(filePath)
-  } catch {
-      console.log('getMetaData catch');
-      return {
-          singer:'',
-          quality:'',
-          picUrl:''
-      }
   }
 }
