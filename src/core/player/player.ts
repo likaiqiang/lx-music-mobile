@@ -168,7 +168,11 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
   const playMusicInfo = playerState.playMusicInfo
 
   void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+    if (
+      musicInfo.id != playMusicInfo.musicInfo?.id ||
+      playerState.musicInfo.pic == url ||
+      playerState.loadErrorPicUrl == url
+    ) return
     setMusicInfo({ pic: url })
     global.app_event.picUpdated()
   })
@@ -218,8 +222,11 @@ const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) =>
   const playMusicInfo = playerState.playMusicInfo
   setMusicUrl(musicInfo as LX.Music.MusicInfo) // 核心
 
-  void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+  void getPicPath({ musicInfo, listId: playerState.playMusicInfo.listId }).then((url: string) => {
+    if (
+      musicInfo.id != playerState.playMusicInfo.musicInfo?.id ||
+      playerState.musicInfo.pic == url ||
+      playerState.loadErrorPicUrl == url) return
     setMusicInfo({ pic: url })
     global.app_event.picUpdated()
   })
