@@ -21,9 +21,17 @@ import Text from "@/components/common/Text";
 import BackgroundTimer, {TimeoutId} from "react-native-background-timer";
 import InputItem from "@/screens/Home/Views/Setting/components/InputItem";
 import {useI18n} from "@/lang";
-import {readMetadata} from "@/utils/nativeModules/metadata";
+import {readBase64Pic, readMetadata, readPic, readQuality} from "@/utils/nativeModules/metadata.ts";
 
 const supportMusic = Platform.OS === 'android' ? ['mp3','wma','wav','ape','flac','ogg','aac'] : ['mp3','wma','wav','flac','aac']
+
+const checkFileExistence = async (filePath:string) => {
+  try {
+    return await RNFetchBlob.fs.stat(filePath);
+  } catch (error) {
+    return false;
+  }
+};
 
 const createDebouncedFunction = <T extends any[]>(
   func: (...args: T) => Promise<void>,
@@ -119,24 +127,31 @@ const getSpelledName = (fileName:string) => {
   }
   return spelledNamesMap.get(lowerCaseFileName);
 }
-
+const dirs = RNFetchBlob.fs.dirs;
 async function generateEmptyLocalMusicInfo(fullName: string, dir: string): Promise<LX.Music.MusicInfoLocal & {quality?: LX.Quality}>{
   const filePath = `${dir}/${fullName}`
   const id = `local__${filePath}`
-  const {singer, quality,picUrl} = await readMetadata(filePath)
+  const {singer, albumName} = await readMetadata(filePath)
+  await readPic(filePath, dirs.PictureDir)
+  const fileName = getFileNameWithoutExtension(fullName)
+
+  let localPicPath = dirs.PictureDir + '/lx.music/' + fileName
+
+  const stat = !!(await checkFileExistence(localPicPath));
+  if(!stat) localPicPath = await readBase64Pic(filePath)
 
   return {
     "id": id,
-    "name": getFileNameWithoutExtension(fullName) ?? '',
+    "name": fileName ?? '',
     "singer": singer ?? '',
     "source":'local',
     "interval":'',
-    "quality":quality,
+    "quality":(await readQuality(filePath) as LX.Quality) ?? '',
     "meta": {
       "songId": id,
-      "albumName": "",
-      "picUrl": picUrl ?? '',
-      "fileName": getFileNameWithoutExtension(fullName),
+      "albumName": albumName ?? "",
+      "picUrl": localPicPath ?? '',
+      "fileName": fileName,
       "ext": getFileExtension(fullName),
       'filePath': filePath
     }

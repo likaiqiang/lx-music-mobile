@@ -13,7 +13,8 @@ import { requestMsg } from '@/utils/message'
 import BackgroundTimer from 'react-native-background-timer'
 import RNFetchBlob from 'rn-fetch-blob';
 import {getLyricInfo} from "@/core/music/index";
-import {writeMetaData} from "@/utils/nativeModules/metadata";
+import {writeMetaData,writePic} from "@/utils/nativeModules/metadata.ts";
+import {writeQuality} from "@/utils/nativeModules/metadata.ts";
 
 export async function requestStoragePermission() {
   const granted = await PermissionsAndroid.request(
@@ -45,8 +46,10 @@ export function getFileExtension(url:string) {
 const downloadMusicWithLrc = async ({url, fileName, musicInfo, picUrl, quality}: {url: string, fileName: string, musicInfo: LX.Music.MusicInfoOnline, picUrl?:string, quality?: LX.Quality} ,options: DownloadOptions) => {
   const dirs = RNFetchBlob.fs.dirs;
   const extension = getFileExtension(url);
+  const picExt = picUrl ? getFileExtension(picUrl) : ''
   let path = `${dirs.DownloadDir}/lx.music/${fileName}.${extension}`;
   let lrcPath = `${dirs.DownloadDir}/lx.music/${fileName}.lrc`
+  let picPath = picUrl ? (`${dirs.PictureDir}/lx.music/${fileName}.${picExt}`) : ''
   return requestStoragePermission().then(async ()=>{
     const exists = await RNFetchBlob.fs.exists(path);
     if(exists && options.isSkipFile){
@@ -56,6 +59,9 @@ const downloadMusicWithLrc = async ({url, fileName, musicInfo, picUrl, quality}:
       const now = Date.now()
       path = `${dirs.DownloadDir}/lx.music/${fileName}_${now}.${extension}`;
       lrcPath = `${dirs.DownloadDir}/lx.music/${fileName}_${now}.lrc`
+      if(picUrl){
+        picPath = `${dirs.PictureDir}/lx.music/${fileName}_${now}.${picExt}`
+      }
     }
     const task: Promise<any>[] = [
       RNFetchBlob.config({
@@ -68,6 +74,14 @@ const downloadMusicWithLrc = async ({url, fileName, musicInfo, picUrl, quality}:
         },
       }).fetch('GET', url)
     ]
+    if(picUrl){
+      task.push(
+        RNFetchBlob.config({
+          fileCache: true,
+          path: picPath
+        }).fetch('GET', picUrl)
+      )
+    }
     if(options.isDownloadLrc) task.push(
       getLyricInfo({musicInfo, onToggleSource: ()=>{}}).then(async ({lyric})=>{
         return RNFetchBlob.fs.writeFile(
@@ -79,12 +93,18 @@ const downloadMusicWithLrc = async ({url, fileName, musicInfo, picUrl, quality}:
     )
     return Promise.allSettled(task).then(()=>{
       console.log('123');
-      return writeMetaData(path,{
-        singer: musicInfo.singer,
-        name: musicInfo.name,
-        picUrl: (typeof picUrl === "string" && picUrl.startsWith('http') ? picUrl : undefined),
-        quality
-      })
+      return Promise.all([
+        writeMetaData(path,{
+          singer: musicInfo.singer!,
+          name: musicInfo.name,
+          albumName: musicInfo.meta.albumName
+          // picUrl: (typeof picUrl === "string" && picUrl.startsWith('http') ? picUrl : undefined),
+          // quality
+        }),
+        quality && writeQuality(path,quality),
+        picUrl && writePic(path, picPath)
+      ].filter(t=>!!t))
+
     })
 
   }).catch((e)=>{

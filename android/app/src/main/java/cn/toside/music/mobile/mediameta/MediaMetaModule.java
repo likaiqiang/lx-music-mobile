@@ -1,10 +1,8 @@
 package cn.toside.music.mobile.mediameta;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-
-import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -12,130 +10,150 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.Promise;
-import com.facebook.react.bridge.WritableMap;
 
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.id3.valuepair.ImageFormats;
 import org.jaudiotagger.tag.images.Artwork;
-import org.jaudiotagger.tag.images.ArtworkFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.FileOutputStream;
+import java.util.concurrent.Callable;
+
+import com.localmediametadata.*;
+import com.localmediametadata.media3.MetadataMedia3;
+
+class CustomMetadata extends Metadata{
+  static public void writeQuality(String filePath, String quality) throws Exception {
+    File audioFile = new File(filePath);
+    AudioFile f = AudioFileIO.read(audioFile);
+    Tag tag = f.getTag();
+
+    tag.setField(FieldKey.QUALITY, quality);
+  }
+  static public String readQuality(String filePath) throws Exception {
+    File audioFile = new File(filePath);
+    AudioFile f = AudioFileIO.read(audioFile);
+
+    Tag tag = f.getTag();
+
+    return tag.getFirst(FieldKey.QUALITY);
+  }
+  public static String readBase64Pic(String filePath) throws Exception {
+    File file = new File(filePath);
+    AudioFile audioFile = AudioFileIO.read(file);
+    Tag tag = audioFile.getTag();
+    Artwork artwork = tag.getFirstArtwork();
+    if (artwork == null) return "";
+
+    byte[] imageData = artwork.getBinaryData();
+    String base64ImagePrefix = "data:image/png;base64,";
+    return  base64ImagePrefix + Base64.encodeToString(imageData, Base64.DEFAULT);
+  }
+}
+
+class CustomMetadataCallable extends MetadataCallable{
+  public static class ReadQuality implements Callable<Object> {
+    private final ReactApplicationContext context;
+    private final String filePath;
+
+    public ReadQuality(ReactApplicationContext context, String filePath) {
+      this.context = context;
+      this.filePath = filePath;
+    }
+    @Override
+    public String call() {
+      try {
+        return CustomMetadata.readQuality(this.filePath);
+      } catch (Exception err) {
+        Log.e("ReadMetadata", "Read Pic Error:");
+        err.printStackTrace();
+        return "";
+      }
+    }
+  }
+  public static class WriteQuality implements Callable<Object> {
+    private final ReactApplicationContext context;
+    private final String filePath;
+    private final String quality;
+    public WriteQuality(ReactApplicationContext context, String filePath, String quality) {
+      this.context = context;
+      this.filePath = filePath;
+      this.quality = quality;
+    }
+    @Override
+    public Object call() throws Exception {
+      CustomMetadata.writeQuality(this.filePath, this.quality);
+      return null;
+    }
+  }
+  public static class ReadBase64Pic implements Callable<Object>{
+    private final ReactApplicationContext context;
+    private final String filePath;
+    public ReadBase64Pic(ReactApplicationContext context, String filePath) {
+      this.context = context;
+      this.filePath = filePath;
+    }
+    @Override
+    public Object call() throws Exception {
+      return CustomMetadata.readBase64Pic(this.filePath);
+    }
+  }
+}
+
 
 public class MediaMetaModule extends ReactContextBaseJavaModule {
   private Context context;
   MediaMetaModule(ReactApplicationContext reactContext) {
     super(reactContext);
-    this.context = (Context) reactContext;
+    this.context = reactContext;
   }
   @Override
   public String getName() {
     return "MediaMeta";
   }
-  private void setMetadata(String filePath, ReadableMap metadata, Promise promise){
-    try {
-      File audioFile = new File(filePath);
-      AudioFile f = AudioFileIO.read(audioFile);
-
-      // 获取标签对象
-      Tag tag = f.getTagOrCreateAndSetDefault();
-      // 设置艺术家、标题等信息
-      if (metadata.hasKey("singer")) {
-        tag.setField(FieldKey.ARTIST, metadata.getString("singer"));
-      }
-      if (metadata.hasKey("name")) {
-        tag.setField(FieldKey.TITLE, metadata.getString("name"));
-      }
-      if (metadata.hasKey("quality")) {
-        tag.setField(FieldKey.QUALITY, metadata.getString("quality"));
-      }
-      if(metadata.hasKey("picUrl")){
-        URL url = new URL(metadata.getString("picUrl"));
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setDoInput(true);
-        connection.connect();
-        InputStream input = connection.getInputStream();
-        Bitmap bitmap = BitmapFactory.decodeStream(input);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-
-        byte[] apicData = new byte[3];
-        input.read(apicData, 0, 3);
-        String mime_type;
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-
-        Artwork artwork = ArtworkFactory.getNew();
-        artwork.setBinaryData(stream.toByteArray());
-        artwork.setMimeType("image/png");
-        tag.addField(artwork);
-      }
-
-      // 保存更改
-      AudioFileIO.write(f);
-      promise.resolve(null);
-    } catch (Exception e) {
-      promise.reject("Edit Metadata Error", "An error occurred while editing metadata", e);
-    }
-  }
-  private void getMetadata(String filePath, Promise promise) {
-    try {
-      // 使用 Jaudiotagger 库来读取音频文件
-      File audioFile = new File(filePath);
-      AudioFile f = AudioFileIO.read(audioFile);
-
-      // 获取标签对象
-      Tag tag = f.getTag();
-
-      // 创建一个 WritableMap 对象，用来存储元数据
-      WritableMap metadata = Arguments.createMap();
-
-      // 从标签中获取艺术家、名称等信息，并添加到 WritableMap 中
-      if (tag.hasField(FieldKey.ARTIST)) {
-        metadata.putString("singer", tag.getFirst(FieldKey.ARTIST));
-      }
-      if (tag.hasField(FieldKey.TITLE)) {
-        metadata.putString("name", tag.getFirst(FieldKey.TITLE));
-      }
-      if(tag.hasField(FieldKey.QUALITY)){
-        metadata.putString("quality", tag.getFirst(FieldKey.QUALITY));
-      }
-
-      Artwork artwork = tag.getFirstArtwork();
-      if(artwork != null){
-        byte[] imageData = artwork.getBinaryData();
-        String base64ImagePrefix = "data:image/png;base64,";
-        String base64ImageString = base64ImagePrefix + Base64.encodeToString(imageData, Base64.DEFAULT);
-        metadata.putString("picUrl", base64ImageString);
-      }
-
-      // 如果成功，调用 promise 的 resolve 方法，传入 WritableMap 对象，表示成功的结果
-      promise.resolve(metadata);
-    } catch (Exception e) {
-      // 如果失败，调用 promise 的 reject 方法，传入一个值，表示失败的原因
-      promise.reject("Read Metadata Error", "An error occurred while reading metadata", e);
-    }
-  }
 
   @ReactMethod
-  public void get(final String path, final Promise promise) {
-    new Thread() {
-      @Override
-      public void run() {
-        getMetadata(path, promise);
-      }
-    }.start();
+  public void readMetadata(String filePath, Promise promise) {
+    AsyncTask.runTask(new CustomMetadataCallable.ReadMetadata((ReactApplicationContext) context, filePath), promise);
   }
   @ReactMethod
-  public void set(final String filePath,final ReadableMap metadata,final Promise promise){
-    new Thread(){
-      @Override
-      public void run(){
-        setMetadata(filePath, metadata, promise);
-      }
-    }.start();
+  public void writeMetadata(String filePath, ReadableMap metadata, boolean isOverwrite, Promise promise) {
+    AsyncTask.runTask(new CustomMetadataCallable.WriteMetadata((ReactApplicationContext) context, filePath, Arguments.toBundle(metadata), isOverwrite), promise);
+  }
+  private static boolean isSupportMedia3Pic(String filePath) {
+    if (!filePath.startsWith("content://")) return false;
+    String ext = Utils.getFileExtension(filePath).toLowerCase();
+    switch (ext) {
+      case "mp3":
+      case "flac": return true;
+      default: return false;
+    }
+  }
+  @ReactMethod
+  public void readPic(String filePath, String picDir, Promise promise) {
+    if (isSupportMedia3Pic(filePath)) {
+      MetadataMedia3.readPic((ReactApplicationContext) context, filePath, picDir, promise);
+    } else {
+      AsyncTask.runTask(new CustomMetadataCallable.ReadPic((ReactApplicationContext) context, filePath, picDir), promise);
+    }
+  }
+  @ReactMethod
+  public void readBase64Pic(String filePath, Promise promise){
+    AsyncTask.runTask(new CustomMetadataCallable.ReadBase64Pic((ReactApplicationContext) context, filePath), promise);
+  }
+  @ReactMethod
+  public void writePic(String filePath, String picPath, Promise promise) {
+    AsyncTask.runTask(new CustomMetadataCallable.WritePic((ReactApplicationContext) context, filePath, picPath), promise);
+  }
+  @ReactMethod
+  public void writeQuality(String filePath, String quality ,Promise promise) {
+    AsyncTask.runTask(new CustomMetadataCallable.WriteQuality((ReactApplicationContext) context, filePath, quality), promise);
+  }
+  @ReactMethod
+  public void readQuality(String filePath ,Promise promise){
+    AsyncTask.runTask(new CustomMetadataCallable.ReadQuality((ReactApplicationContext) context, filePath), promise);
   }
 }
