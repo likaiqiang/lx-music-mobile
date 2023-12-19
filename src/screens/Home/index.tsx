@@ -5,6 +5,7 @@ import { setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
 import Vertical from './Vertical'
 import Horizontal from './Horizontal'
+import SizeView from './SizeView'
 import {importUserApi} from "@/core/userApi";
 
 
@@ -27,12 +28,15 @@ export default ({ componentId }: Props) => {
   }, [])
 
   return (
-    <PageContent>
-      {
-        isHorizontalMode
-          ? <Horizontal />
-          : <Vertical />
-      }
-    </PageContent>
+    <>
+      <SizeView />
+      <PageContent>
+        {
+          isHorizontalMode
+            ? <Horizontal />
+            : <Vertical />
+        }
+      </PageContent>
+    </>
   )
 }
