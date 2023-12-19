@@ -21,7 +21,9 @@ const SearchPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_search')
   const component = useMemo(() => <Search />, [])
   useEffect(() => {
+    let currentId: CommonState['navActiveId'] = commonState.navActiveId
     const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
+      currentId = id
       if (id == 'nav_search') {
         requestAnimationFrame(() => {
           void InteractionManager.runAfterInteractions(() => {
@@ -31,6 +33,7 @@ const SearchPage = () => {
       }
     }
     const handleHide = () => {
+      if (currentId != 'nav_setting') return
       setVisible(false)
     }
     const handleConfigUpdated = (keys: Array<keyof LX.AppSetting>) => {
@@ -55,7 +58,9 @@ const SongListPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_songlist')
   const component = useMemo(() => <SongList />, [])
   useEffect(() => {
+    let currentId: CommonState['navActiveId'] = commonState.navActiveId
     const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
+      currentId = id
       if (id == 'nav_songlist') {
         requestAnimationFrame(() => {
           void InteractionManager.runAfterInteractions(() => {
@@ -65,6 +70,7 @@ const SongListPage = () => {
       }
     }
     const handleHide = () => {
+      if (currentId != 'nav_setting') return
       setVisible(false)
     }
     global.state_event.on('navActiveIdUpdated', handleNavIdUpdate)
@@ -85,7 +91,9 @@ const LeaderboardPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_top')
   const component = useMemo(() => <Leaderboard />, [])
   useEffect(() => {
+    let currentId: CommonState['navActiveId'] = commonState.navActiveId
     const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
+      currentId = id
       if (id == 'nav_top') {
         requestAnimationFrame(() => {
           void InteractionManager.runAfterInteractions(() => {
@@ -95,6 +103,7 @@ const LeaderboardPage = () => {
       }
     }
     const handleHide = () => {
+      if (currentId != 'nav_setting') return
       setVisible(false)
     }
     const handleConfigUpdated = (keys: Array<keyof LX.AppSetting>) => {
@@ -119,7 +128,9 @@ const MylistPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_love')
   const component = useMemo(() => <Mylist />, [])
   useEffect(() => {
+    let currentId: CommonState['navActiveId'] = commonState.navActiveId
     const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
+      currentId = id
       if (id == 'nav_love') {
         requestAnimationFrame(() => {
           void InteractionManager.runAfterInteractions(() => {
@@ -129,6 +140,7 @@ const MylistPage = () => {
       }
     }
     const handleHide = () => {
+      if (currentId != 'nav_setting') return
       setVisible(false)
     }
     const handleConfigUpdated = (keys: Array<keyof LX.AppSetting>) => {
