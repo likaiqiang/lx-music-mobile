@@ -9,6 +9,7 @@ import commonState, { type InitState as CommonState } from '@/store/common/state
 import { createStyle } from '@/utils/tools'
 import PagerView, { type PageScrollStateChangedNativeEvent, type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
 import { setNavActiveId } from '@/core/common'
+import settingState from '@/store/setting/state'
 import Download, {DownloadTypes} from "@/screens/Home/Views/Download";
 import BackgroundTimer from "react-native-background-timer";
 
@@ -304,10 +305,16 @@ const Main = () => {
       activeIndexRef.current = index
       pagerViewRef.current?.setPageWithoutAnimation(index)
     }
+    const handleConfigUpdate = (keys: Array<keyof LX.AppSetting>, setting: Partial<LX.AppSetting>) => {
+      if (!keys.includes('common.homePageScroll')) return
+      pagerViewRef.current?.setScrollEnabled(setting['common.homePageScroll']!)
+    }
     // window.requestAnimationFrame(() => pagerViewRef.current && pagerViewRef.current.setPage(activeIndexRef.current))
     global.state_event.on('navActiveIdUpdated', handleUpdate)
+    global.state_event.on('configUpdated', handleConfigUpdate)
     return () => {
       global.state_event.off('navActiveIdUpdated', handleUpdate)
+      global.state_event.off('configUpdated', handleConfigUpdate)
     }
   }, [])
 
@@ -319,6 +326,7 @@ const Main = () => {
       offscreenPageLimit={1}
       onPageSelected={onPageSelected}
       onPageScrollStateChanged={onPageScrollStateChanged}
+      scrollEnabled={settingState.setting['common.homePageScroll']}
       style={styles.pagerView}
     >
       <View collapsable={false} key="nav_search" style={styles.pageStyle}>
