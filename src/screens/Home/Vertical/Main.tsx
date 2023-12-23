@@ -15,6 +15,7 @@ import BackgroundTimer from "react-native-background-timer";
 const hideKeys = [
   'list.isShowAlbumName',
   'list.isShowInterval',
+  'theme.fontShadow',
 ] as Readonly<Array<keyof LX.AppSetting>>
 
 const SearchPage = () => {
@@ -73,14 +74,19 @@ const SongListPage = () => {
       if (currentId != 'nav_setting') return
       setVisible(false)
     }
+    const handleConfigUpdated = (keys: Array<keyof LX.AppSetting>) => {
+      if (keys.some(k => hideKeys.includes(k))) handleHide()
+    }
     global.state_event.on('navActiveIdUpdated', handleNavIdUpdate)
     global.state_event.on('themeUpdated', handleHide)
     global.state_event.on('languageChanged', handleHide)
+    global.state_event.on('configUpdated', handleConfigUpdated)
 
     return () => {
       global.state_event.off('navActiveIdUpdated', handleNavIdUpdate)
       global.state_event.off('themeUpdated', handleHide)
       global.state_event.off('languageChanged', handleHide)
+      global.state_event.on('configUpdated', handleConfigUpdated)
     }
   }, [])
 
