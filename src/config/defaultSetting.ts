@@ -72,7 +72,7 @@ const defaultSetting: LX.AppSetting = {
   'theme.darkId': 'black',
   'theme.hideBgDark': false,
   'theme.dynamicBg': false,
-  'theme.fontShadow': true,
+  'theme.fontShadow': false,
 
   'download.enable': false,
   'download.isDownloadLrc': true,

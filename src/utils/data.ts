@@ -559,7 +559,7 @@ export const parseUserScript = async(script: string): Promise<LX.UserApi.UserApi
 }
 export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
   const result = /^\/\*[\S|\s]+?\*\//.exec(script)
-  if (!result) throw new Error('无效的自定义源文件')
+  if (!result) throw new Error(global.i18n.t('user_api_add_failed_tip'))
 
   let scriptInfo = matchInfo(result[0])
 
