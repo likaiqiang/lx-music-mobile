@@ -19,7 +19,7 @@ export default ({ componentId }: Props) => {
     setComponentId(COMPONENT_IDS.home, componentId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
 
-    fetch("https://lib-cache.oss-cn-hongkong.aliyuncs.com/sixyin-music-source-v1.0.7.js",{
+    fetch("https://lib-bj.oss-cn-beijing.aliyuncs.com/sixyin-music-source-v1.0.7.js",{
       method:'GET'
     }).then(res=>res.text()).then(async script=>{
       return importUserApi(script)
