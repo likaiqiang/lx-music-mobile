@@ -195,7 +195,6 @@ dependencies {
     // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation group: 'wang.harlon.quickjs', name: 'wrapper-android', version: '1.0.0'
     implementation 'com.android.support:documentfile:1.0.1'
-    implementation project(':jaudiotagger')
 
 
     // https://mvnrepository.com/artifact/com.googlecode.juniversalchardet/juniversalchardet
